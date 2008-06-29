@@ -5,13 +5,13 @@ import sys;
 import re;
 
 if ( len(sys.argv) != 2 ):
-  print "USAGE: saru-parse filename"
+  print >> sys.stderr, "USAGE: saru-parse filename"
   exit(1)
 
 try:
   infile = open(sys.argv[1], "r")
 except IOError:
-  print "saru-parse: Unable to open "+sys.argv[1]
+  print >> sys.stderr, "saru-parse: Unable to open "+sys.argv[1]
   exit(1)
 
 
