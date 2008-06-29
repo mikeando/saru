@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+print "saru-parse not yet implimented"
+exit(1)

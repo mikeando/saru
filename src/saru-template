@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+print "// TEST:RequiresLibrary FakeDummy"
+print "// TEST:TestName Dummy Test"
+print "// TEST:Tests That the tesing library works"
+print "// TEST:Expected pass"
+print "";
+print "#include \"TestUtils.h\"";
+print "";
+print "void doTest()";
+print "{";
+print "  if(true)"
+print "  {";
+print "     Test::Fail(\"Unimplimented\");";
+print "  }";
+print "  Test::Ok();";
+print "}";
