@@ -1,0 +1,52 @@
+#!/usr/bin/python
+import sys
+import os
+import re
+
+def isSystemRoot( path ):
+  return ( os.path.abspath( os.path.normpath( path ) ) == "/" )
+
+def isSaruRoot( path ):
+  saruconf = os.path.normpath( path + "/saruconf" ) 
+  if (not os.path.exists( saruconf ) ):
+    return False
+  try:
+    infile = open(saruconf, "r")
+  except IOError:
+    print >> sys.stderr, "saru-pathe-helper: Unable to open "+ saruconf
+    exit(1)
+  root_pattern = re.compile(r"^\s*is-saru-root\s*=\s*true\s*$")
+  for line in infile:
+    if( root_pattern.search(line) ):
+      return True
+  return False
+
+def getParentPath( path ):
+  if ( path == "/" ): 
+    return "/"
+  return os.path.abspath( os.path.normpath(path+"/.." ) )
+
+
+if( len(sys.argv)!=3 ):
+  print >> sys.stderr, "USAGE: saru-path-helper mode file/path"
+  exit(1)
+
+if( sys.argv[1] == "find-root" ):
+  path = os.path.abspath( os.path.normpath( sys.argv[2] ) );
+  if( not os.path.isdir( path ) ):
+    print >> sys.stderr, " saru-path-helper : find-root expects a directory argument"
+    exit(1)
+  while( not isSystemRoot(path) ):
+    if( isSaruRoot(path) ) :
+      print path
+      exit(0)
+    path = getParentPath(path)
+  if( isSaruRoot(path) ) :
+    print path
+    exit(0)
+  exit(1)
+else:
+  print >> sys.stderr, "sarue-path-helper : Unknown mode "+sys.argv[1]
+  print >> sys.stderr, "known modes are :"
+  print >> sys.stderr, "  find-root"
+  exit(1)
