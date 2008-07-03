@@ -4,12 +4,18 @@ import sys
 import re
 import subprocess
 import os
+import shutil
+
+from stat import *
 
 if ( len(sys.argv) != 2 ):
   print "USAGE: saru-run-test filename"
   exit(1)
 
-parseProcess = subprocess.Popen(["./saru-parse", sys.argv[1]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+testfilename = sys.argv[1]
+
+
+parseProcess = subprocess.Popen(["./saru-parse", testfilename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 retcode = parseProcess.wait()
 if(retcode!=0):
   print "saru-run-test : saru-parse failed with error code " + repr(retcode)
@@ -31,29 +37,40 @@ if ( not os.path.isdir(".saru/bin") ):
     exit(1)
   os.mkdir(".saru/bin")
 
+extension = os.path.splitext(testfilename)[1]
+if(extension==".cpp"):
+#CPP Files get compiled via a makefile
+  makefile = open(".saru/"+testfilename+".make","w")
+
+  # BUILD A MAKE FILE...
+  # TODO Make these use the settings taht got read in from the saru-parse stage
+  print >> makefile, testfilename + ".test : " + testfilename
+  print >> makefile, "\tg++ " + testfilename + " -o .saru/bin/" + testfilename + ".test"
+  makefile.close()
   
-makefile = open(".saru/"+sys.argv[1]+".make","w");
-
-# BUILD A MAKE FILE...
-# TODO Make these use the settings taht got read in from the saru-parse stage
-print >> makefile, sys.argv[1] + ".test : " + sys.argv[1]
-print >> makefile, "\tg++ " + sys.argv[1] + " -o .saru/bin/" + sys.argv[1] + ".test"
-makefile.close()
-
-# Lets try making it...
-# TODO Make these use the settings taht got read in from the saru-parse stage
-makeProcess = subprocess.Popen(["/usr/bin/make", "--file", "./.saru/"+sys.argv[1]+".make", sys.argv[1]+".test"], stdout=subprocess.PIPE, stderr=subprocess.PIPE  )
-retcode=makeProcess.wait()
-
-if(retcode!=0):
-  print "saru-run-test : make failed with error code " + repr(retcode)
-  make_stdout, make_stderr = makeProcess.communicate()
-  print make_stderr
-  print make_stdout
+  # Lets try making it...
+  # TODO Make these use the settings taht got read in from the saru-parse stage
+  makeProcess = subprocess.Popen(["/usr/bin/make", "--file", "./.saru/"+testfilename+".make", testfilename+".test"], stdout=subprocess.PIPE, stderr=subprocess.PIPE  )
+  retcode=makeProcess.wait()
+  
+  if(retcode!=0):
+    print >> sys.stderr, "saru-run-test : make failed with error code " + repr(retcode)
+    make_stdout, make_stderr = makeProcess.communicate()
+    print >> sys.stderr, make_stderr
+    print >> sys.stderr, make_stdout
+    exit(1)
+  executablename = "./.saru/bin/"+testfilename+".test"
+elif(extension==".py"):
+  executablename = "./.saru/bin/"+testfilename
+  shutil.copyfile(testfilename, executablename) 
+else:
+  print >> sys.stderr, "Unknown extension on file "+testfilename
   exit(1)
 
 # Lets try running it...
-testProcess = subprocess.Popen([".saru/bin/"+sys.argv[1]+".test"], stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
+os.chmod( executablename, S_IREAD | S_IWUSR | S_IXUSR )
+print "about to execture "+executablename
+testProcess = subprocess.Popen([ executablename ], stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
 retcode=testProcess.wait()
 
 if(retcode!=0):
