@@ -1,0 +1,3 @@
+#!/bin/bash
+
+[ "$(../src/saru-path-helper find-root ../fakeproject)" == "/Users/michaelanderson/Code/git/saru/fakeproject" ]  

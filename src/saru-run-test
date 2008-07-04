@@ -12,10 +12,20 @@ if ( len(sys.argv) != 2 ):
   print "USAGE: saru-run-test filename"
   exit(1)
 
-testfilename = sys.argv[1]
+if ( os.path.isdir(sys.argv[1]) ):
+  print "saru-run-test : Doesn't run on a directory yet."
+  exit(1)
+
+# How was this script run?
+sarubinpath = os.path.dirname( os.path.abspath( sys.argv[0] ) )
+saruparse = os.path.normpath( sarubinpath + "/saru-parse" )
 
 
-parseProcess = subprocess.Popen(["./saru-parse", testfilename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+fulltestname = sys.argv[1]
+(testdir, testname) = os.path.split( fulltestname )
+dotsaru =  os.path.normpath( testdir + "/.saru" )
+
+parseProcess = subprocess.Popen([ saruparse, fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 retcode = parseProcess.wait()
 if(retcode!=0):
   print "saru-run-test : saru-parse failed with error code " + repr(retcode)
@@ -25,32 +35,33 @@ if(retcode!=0):
 settings = parseProcess.communicate()[0]
 
 
-if ( not os.path.isdir(".saru") ):
-  if( os.path.exists(".saru") ):
+if ( not os.path.isdir( dotsaru ) ):
+  if( os.path.exists( dotsaru ) ):
     print >> sys.stderr, "saru-run-test : .saru object exists but is not directory!"
     exit(1)
-  os.mkdir(".saru")
+  os.mkdir( dotsaru )
 
-if ( not os.path.isdir(".saru/bin") ):
-  if( os.path.exists(".saru/bin") ):
+if ( not os.path.isdir( dotsaru+"/bin" ) ):
+  if( os.path.exists( dotsaru+"/bin" ) ):
     print >> sys.stderr, "saru-run-test : .saru/bin object exists but is not directory!"
     exit(1)
-  os.mkdir(".saru/bin")
+  os.mkdir( dotsaru+"/bin" )
 
-extension = os.path.splitext(testfilename)[1]
+extension = os.path.splitext(testname)[1]
 if(extension==".cpp"):
 #CPP Files get compiled via a makefile
-  makefile = open(".saru/"+testfilename+".make","w")
+  makefilename = os.path.normpath( dotsaru+"/"+testname+".make" )
+  makefile = open( makefilename,"w")
 
   # BUILD A MAKE FILE...
   # TODO Make these use the settings taht got read in from the saru-parse stage
-  print >> makefile, testfilename + ".test : " + testfilename
-  print >> makefile, "\tg++ " + testfilename + " -o .saru/bin/" + testfilename + ".test"
+  print >> makefile, testname + ".test : " + testname
+  print >> makefile, "\tg++ " + testname + " -o .saru/bin/" + testname + ".test"
   makefile.close()
   
   # Lets try making it...
   # TODO Make these use the settings taht got read in from the saru-parse stage
-  makeProcess = subprocess.Popen(["/usr/bin/make", "--file", "./.saru/"+testfilename+".make", testfilename+".test"], stdout=subprocess.PIPE, stderr=subprocess.PIPE  )
+  makeProcess = subprocess.Popen(["/usr/bin/make", "-C", testdir, "--file", makefilename], stdout=subprocess.PIPE, stderr=subprocess.PIPE  )
   retcode=makeProcess.wait()
   
   if(retcode!=0):
@@ -59,17 +70,19 @@ if(extension==".cpp"):
     print >> sys.stderr, make_stderr
     print >> sys.stderr, make_stdout
     exit(1)
-  executablename = "./.saru/bin/"+testfilename+".test"
+  executablename = os.path.normpath(dotsaru+"/bin/"+testname+".test")
 elif(extension==".py"):
-  executablename = "./.saru/bin/"+testfilename
-  shutil.copyfile(testfilename, executablename) 
+  executablename = os.path.normpath( dotsaru+"/bin/"+testname )
+  shutil.copyfile( fulltestname, executablename) 
+elif(extension==".bash"):
+  executablename = os.path.normpath( dotsaru+"/bin/"+testname )
+  shutil.copyfile( fulltestname, executablename) 
 else:
-  print >> sys.stderr, "Unknown extension on file "+testfilename
+  print >> sys.stderr, "Unknown extension on file "+testname
   exit(1)
 
 # Lets try running it...
 os.chmod( executablename, S_IREAD | S_IWUSR | S_IXUSR )
-print "about to execture "+executablename
 testProcess = subprocess.Popen([ executablename ], stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
 retcode=testProcess.wait()
 

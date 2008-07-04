@@ -1,0 +1,2 @@
+#!/bin/bash
+[ "$(../src/saru-run-test ../fakeproject/failingtest.bash)" == "saru-run-test : execution of test failed with error code 1" ]
