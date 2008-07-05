@@ -1,0 +1,2 @@
+#!/bin/bash
+[ "$(../src/saru-search tag testtag ../fakeproject)" ==  "testtag01.cpp\ntesttag02.bash" ]

@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+import sys
+import re
+import subprocess
+import os
+import shutil
+
+from stat import *
+
+
+
+
+
+binname = os.path.basename( sys.argv[0] )
+
+if ( len(sys.argv) != 4 ):
+  print "USAGE: "+binname+" tag tagname directory"
+  exit(1)
+
+if( sys.argv[1] != "tag" ):
+  print "USAGE: "+binname+" tag tagname directory"
+  exit(1)
+
+tagname = sys.argv[2]
+
+dirname = sys.argv[3]
+
+if ( not os.path.isdir( dirname ) ):
+  print os.path.basename( sys.argv[0] )+" : only runs on a directories."
+  exit(1)
+
+# How was this script run?
+sarubinpath = os.path.dirname( os.path.abspath( sys.argv[0] ) )
+saruparse = os.path.normpath( sarubinpath + "/saru-parse" )
+
+def fileHasSaruTag( filename, tag ):
+  print "trying to parse "+filename
+  parseProcess = subprocess.Popen([ saruparse, filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  retcode = parseProcess.wait()
+  if(retcode!=0):
+    print binname +" : saru-parse failed with error code " + repr(retcode)
+    print parseProcess.communicate()[1]
+    exit(1)
+  settings = parseProcess.communicate()[0]
+  return False
+
+for root, dirs, files in os.walk(dirname):
+  for file in files:
+    filename = os.path.normpath( root + "/" + file )
+    if fileHasSaruTag(filename,tagname):
+      print filename
+  if ".saru" in dirs:
+   dirs.remove(".saru")

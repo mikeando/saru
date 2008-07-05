@@ -1,0 +1,2 @@
+#!/bin/bash
+[ "$(../src/saru-run-test ../fakeproject/nonsaru.bash)" == "saru-run-test : file does not contain any saru test information" ]

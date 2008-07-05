@@ -1,8 +1,61 @@
 #!/usr/bin/env python
 
+# TODO : This needs a bunch of different modes to run in...
+# dump which dumps all the saru tags
+# issaru which just says whether or not the file is saru printing "YES" or "NO"
+# get xxx which prints any tags matching xxx.
+
+
 import sys;
 import re;
 import os
+
+def parseCXXFile( infile ):
+  pattern_directive = re.compile(r"^\s*//\s*SARU\s*:\s*(\S+)(.*)$")
+  pattern_comment = re.compile(r"^\s*//")
+  pattern_empty = re.compile(r"^\s*$")
+  settings={}
+
+  for line in infile:
+    if( pattern_empty.search(line) ) :
+      continue
+    match = pattern_directive.search(line); 
+    if ( match ):
+      key = match.group(1)
+      value = match.group(2)
+      if settings.has_key(key):
+        settings[key].append(value)
+      else:
+        settings[key]=[ value ]
+      continue
+    if ( pattern_comment.search(line) ):
+      continue
+    break
+  return settings
+
+def parseBashFile( infile ):
+  pattern_directive = re.compile(r"^\s*#\s*SARU\s*:\s*(\S+)(.*)$")
+  pattern_comment = re.compile(r"^\s*#")
+  pattern_empty = re.compile(r"^\s*$")
+  settings={}
+
+  for line in infile:
+    if( pattern_empty.search(line) ) :
+      continue
+    match = pattern_directive.search(line); 
+    if ( match ):
+      key = match.group(1)
+      value = match.group(2)
+      if settings.has_key(key):
+        settings[key].append(value)
+      else:
+        settings[key]=[ value ]
+      continue
+    if ( pattern_comment.search(line) ):
+      continue
+    break
+  return settings
+
 
 if ( len(sys.argv) != 2 ):
   print >> sys.stderr, "USAGE: saru-parse filename"
@@ -24,21 +77,18 @@ except IOError:
   print >> sys.stderr, "saru-parse: Unable to open "+fulltestname
   exit(1)
 
-
-pattern_directive = re.compile(r"^\s*//\s*TEST\s*:\s*(\S+)(.*)$")
-pattern_comment = re.compile(r"^\s*//")
-pattern_empty = re.compile(r"^\s*$")
-
-
-print "File=\""+sys.argv[1]+"\""
-for line in infile:
-  if( pattern_empty.search(line) ) :
-    continue
-  match = pattern_directive.search(line); 
-  if ( match ):
-    print "   " + match.group(1) + " : \"" + match.group(2).strip() + "\"" 
-    continue
-  if ( pattern_comment.search(line) ):
-    continue
-  break
-
+if( os.path.splitext(testname)[1] == ".cpp" ):
+  settings = parseCXXFile(infile)
+  if ( settings=={} ):
+    print >> sys.stderr, "saru-parse: No settings in file"
+    exit(1)
+  exit(0)
+if( os.path.splitext(testname)[1] == ".bash" ):
+  settings = parseBashFile(infile)
+  if ( settings=={} ):
+    print >> sys.stderr, "saru-parse: No settings in file"
+    exit(1)
+  exit(0)
+else:
+  print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
+  exit(1)

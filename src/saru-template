@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-print "// TEST:RequiresLibrary FakeDummy"
-print "// TEST:TestName Dummy Test"
-print "// TEST:Tests That the tesing library works"
-print "// TEST:Expected pass"
+print "// SARU:TestName Dummy Test"
+print "// SARU:RequiresLibrary FakeDummy"
+print "// SARU:RequiresLibrary FakeDummy"
+print "// SARU:Tests That the tesing library works"
+print "// SARU:Expected pass"
 print "";
 print "#include \"TestUtils.h\"";
 print "";
