@@ -13,7 +13,11 @@ if ( len(sys.argv) != 2 ):
   exit(1)
 
 if ( os.path.isdir(sys.argv[1]) ):
-  print "saru-run-test : Doesn't run on a directory yet."
+  print os.path.basename( sys.argv[0] )+" : Doesn't run on a directory yet."
+  exit(1)
+
+if( not os.path.exists( sys.argv[1]) ):
+  print os.path.basename( sys.argv[0] )+" : nonexistant test "+ os.path.basename( sys.argv[1] )
   exit(1)
 
 # How was this script run?
