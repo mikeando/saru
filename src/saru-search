@@ -35,15 +35,29 @@ sarubinpath = os.path.dirname( os.path.abspath( sys.argv[0] ) )
 saruparse = os.path.normpath( sarubinpath + "/saru-parse" )
 
 def fileHasSaruTag( filename, tag ):
-  print "trying to parse "+filename
-  parseProcess = subprocess.Popen([ saruparse, filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  parseProcess = subprocess.Popen([ saruparse, "issaru", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  retcode = parseProcess.wait()
+  if(retcode!=0):
+    errmesg = parseProcess.communicate()[1].strip();
+    if(errmesg=="saru-parse : Unsuported file format for file saruconf"):
+      return False
+    print binname +" : saru-parse failed with error code " + repr(retcode)
+    print errmesg
+    exit(1)
+  com = parseProcess.communicate()[0].strip()
+  if(com=="NO"):
+    return False;
+  parseProcess = subprocess.Popen([ saruparse, "get", "Tag", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   retcode = parseProcess.wait()
   if(retcode!=0):
     print binname +" : saru-parse failed with error code " + repr(retcode)
-    print parseProcess.communicate()[1]
+    errmesg = parseProcess.communicate()[1].strip();
+    print errmesg
     exit(1)
-  settings = parseProcess.communicate()[0]
-  return False
+  com = parseProcess.communicate()[0].strip()
+  for l in com.split("\n"):
+    if tag in l.split():
+      return True
 
 for root, dirs, files in os.walk(dirname):
   for file in files:

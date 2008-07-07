@@ -29,7 +29,7 @@ fulltestname = sys.argv[1]
 (testdir, testname) = os.path.split( fulltestname )
 dotsaru =  os.path.normpath( testdir + "/.saru" )
 
-parseProcess = subprocess.Popen([ saruparse, fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+parseProcess = subprocess.Popen([ saruparse, "dump", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 retcode = parseProcess.wait()
 if(retcode!=0):
   print "saru-run-test : saru-parse failed with error code " + repr(retcode)

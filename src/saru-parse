@@ -24,9 +24,9 @@ def parseCXXFile( infile ):
       key = match.group(1)
       value = match.group(2)
       if settings.has_key(key):
-        settings[key].append(value)
+        settings[key].append(value.strip())
       else:
-        settings[key]=[ value ]
+        settings[key]=[ value.strip() ]
       continue
     if ( pattern_comment.search(line) ):
       continue
@@ -47,9 +47,9 @@ def parseBashFile( infile ):
       key = match.group(1)
       value = match.group(2)
       if settings.has_key(key):
-        settings[key].append(value)
+        settings[key].append(value.strip())
       else:
-        settings[key]=[ value ]
+        settings[key]=[ value.strip() ]
       continue
     if ( pattern_comment.search(line) ):
       continue
@@ -57,38 +57,143 @@ def parseBashFile( infile ):
   return settings
 
 
-if ( len(sys.argv) != 2 ):
-  print >> sys.stderr, "USAGE: saru-parse filename"
-  exit(1)
-
-if ( os.path.isdir(sys.argv[1]) ):
-  print os.path.basename(sys.argv[0]) + " : Doesn't run on a directory yet."
-  exit(1)
+def printUsage():
+  print >> sys.stderr, "USAGE: saru-parse dump file"
+  print >> sys.stderr, "USAGE: saru-parse issaru file"
+  print >> sys.stderr, "USAGE: saru-parse get key file"
 
 # How was this script run?
 sarubinpath = os.path.dirname( os.path.abspath( sys.argv[0] ) )
-fulltestname = sys.argv[1]
-(testdir, testname) = os.path.split( fulltestname )
+
+def doSaruParseDump():
+  if(len(sys.argv)!=3):
+    printUsage()
+    exit(1)
+  if ( os.path.isdir(sys.argv[2]) ):
+    print os.path.basename(sys.argv[0]) + " : Doesn't run on a directory yet."
+    exit(1)
+
+  fulltestname = sys.argv[2]
+  (testdir, testname) = os.path.split( fulltestname )
 
 
-try:
-  infile = open(fulltestname, "r")
-except IOError:
-  print >> sys.stderr, "saru-parse: Unable to open "+fulltestname
+  try:
+    infile = open(fulltestname, "r")
+  except IOError:
+    print >> sys.stderr, "saru-parse: Unable to open "+fulltestname
+    exit(1)
+
+  if( os.path.splitext(testname)[1] == ".cpp" ):
+    settings = parseCXXFile(infile)
+    if ( settings=={} ):
+      print >> sys.stderr, "saru-parse: No settings in file"
+      exit(1)
+    for k,v in settings.iteritems():
+       for vv in v:
+         print k+" : "+vv
+    exit(0)
+  if( os.path.splitext(testname)[1] == ".bash" ):
+    settings = parseBashFile(infile)
+    if ( settings=={} ):
+      print >> sys.stderr, "saru-parse: No settings in file"
+      exit(1)
+    for k,v in settings.iteritems():
+       for vv in v:
+         print k+" : "+vv
+    exit(0)
+  else:
+    print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
+    exit(1)
+
+def doSaruParseIsSaru():
+  if(len(sys.argv)!=3):
+    printUsage()
+    exit(1)
+  
+  if ( os.path.isdir(sys.argv[2]) ):
+    print os.path.basename(sys.argv[0]) + " : Doesn't run on a directory yet."
+    exit(1)
+
+  fulltestname = sys.argv[2]
+  (testdir, testname) = os.path.split( fulltestname )
+
+
+  try:
+    infile = open(fulltestname, "r")
+  except IOError:
+    print >> sys.stderr, "saru-parse: Unable to open "+fulltestname
+    exit(1)
+
+  if( os.path.splitext(testname)[1] == ".cpp" ):
+    settings = parseCXXFile(infile)
+    if ( settings=={} ):
+      print "NO"
+    else:
+      print "YES"
+    exit(0)
+  if( os.path.splitext(testname)[1] == ".bash" ):
+    settings = parseBashFile(infile)
+    if ( settings=={} ):
+      print "NO"
+    else:
+      print "YES"
+    exit(0)
+  else:
+    print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
+    exit(1)
+
+def doSaruParseGetKey():
+  if(len(sys.argv)!=4):
+    printUsage()
+    exit(1)
+  
+  if ( os.path.isdir(sys.argv[3]) ):
+    print os.path.basename(sys.argv[0]) + " : Doesn't run on a directory yet."
+    exit(1)
+
+  key = sys.argv[2]
+  fulltestname = sys.argv[3]
+  (testdir, testname) = os.path.split( fulltestname )
+
+
+  try:
+    infile = open(fulltestname, "r")
+  except IOError:
+    print >> sys.stderr, "saru-parse: Unable to open "+fulltestname
+    exit(1)
+
+  if( os.path.splitext(testname)[1] == ".cpp" ):
+    settings = parseCXXFile(infile)
+    if( settings.has_key( key )) :
+       for val in settings[key] :
+          print val
+    exit(0)
+  if( os.path.splitext(testname)[1] == ".bash" ):
+    settings = parseBashFile(infile)
+    if( settings.has_key( key )) :
+       for val in settings[key] :
+          print val
+    exit(0)
+  else:
+    print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
+    exit(1)
+
+if ( len(sys.argv) == 1 ):
+  printUsage()
   exit(1)
 
-if( os.path.splitext(testname)[1] == ".cpp" ):
-  settings = parseCXXFile(infile)
-  if ( settings=={} ):
-    print >> sys.stderr, "saru-parse: No settings in file"
-    exit(1)
-  exit(0)
-if( os.path.splitext(testname)[1] == ".bash" ):
-  settings = parseBashFile(infile)
-  if ( settings=={} ):
-    print >> sys.stderr, "saru-parse: No settings in file"
-    exit(1)
-  exit(0)
+
+# dump which dumps all the saru tags
+# issaru which just says whether or not the file is saru printing "YES" or "NO"
+# get xxx which prints any tags matching xxx.
+if ( sys.argv[1] == "dump" ):
+  doSaruParseDump()
+elif ( sys.argv[1] == "issaru" ):
+  doSaruParseIsSaru()
+elif ( sys.argv[1]=="get" ):
+  doSaruParseGetKey()
 else:
-  print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
+  printUsage()
   exit(1)
+
+
