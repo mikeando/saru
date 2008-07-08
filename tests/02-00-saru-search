@@ -12,7 +12,7 @@ if( retcode != 0 ) :
   exit(1)
 
 com = searchProc.communicate()[0]
-lines = com.split()
+lines = com.splitlines()
 if ( len(lines)!= 2 ):
   exit(1)
 if ( lines[0] != "../fakeproject/testtag01.cpp" ):

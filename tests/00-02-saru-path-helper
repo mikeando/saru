@@ -1,7 +1,23 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-if ../src/saru-path-helper find-root ../fakeproject/notsubdir > /dev/null 2>&1 ;  then
-  exit 1 ;
-else  
-  exit 0 ;
-fi
+import sys
+import subprocess
+import os
+
+
+pathProc = subprocess.Popen( [ "../src/saru-path-helper", "find-root", "../fakeproject/notsubdir" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+retcode = pathProc.wait()
+
+if (retcode == 0 ) :
+  exit(1)
+
+(procstdout, procstderr) = pathProc.communicate()
+lines=procstdout.splitlines()
+if(len(lines)!=0):
+  exit(1)
+lines=procstderr.splitlines()
+if(len(lines)!=1):
+  exit(1)
+if( lines[0].strip() != "saru-path-helper : find-root expects a directory argument" ):
+  exit(1)
+exit(0)
