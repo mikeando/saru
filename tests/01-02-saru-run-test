@@ -1,2 +1,2 @@
 #!/bin/bash
-[ "$(../src/saru-run-test ../fakeproject/nonexistanttest.bash)" == "saru-run-test : nonexistant test nonexistanttest.bash" ]
+[ "$(../src/saru-run-test single ../fakeproject/nonexistanttest.bash)" == "saru-run-test : nonexistant test nonexistanttest.bash" ]
