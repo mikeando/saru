@@ -29,6 +29,16 @@ fulltestname = sys.argv[1]
 (testdir, testname) = os.path.split( fulltestname )
 dotsaru =  os.path.normpath( testdir + "/.saru" )
 
+checkProcess = subprocess.Popen([ saruparse, "issaru", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+retcode = checkProcess.wait()
+if(retcode!=0):
+  print "saru-run-test : saru-parse issaru check died with error code " + repr(retcode)
+  print checkProcess.communicate()[1]
+  exit(1)
+if ( checkProcess.communicate()[0].splitlines()[0] == "NO" ):
+  print "saru-run-test : file does not contain any saru test information"
+  exit(1)
+
 parseProcess = subprocess.Popen([ saruparse, "dump", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 retcode = parseProcess.wait()
 if(retcode!=0):
