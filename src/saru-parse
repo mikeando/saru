@@ -117,7 +117,6 @@ def doSaruParseIsSaru():
   fulltestname = sys.argv[2]
   (testdir, testname) = os.path.split( fulltestname )
 
-
   try:
     infile = open(fulltestname, "r")
   except IOError:
@@ -139,8 +138,8 @@ def doSaruParseIsSaru():
       print "YES"
     exit(0)
   else:
-    print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
-    exit(1)
+    print "UNKNOWN FORMAT"
+    exit(0)
 
 def doSaruParseGetKey():
   if(len(sys.argv)!=4):

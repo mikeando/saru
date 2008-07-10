@@ -1,7 +1,7 @@
 // SARU:TestName TestTag01
 // SARU:Tag testtag
 
-void main()
+int main()
 {
   return 0;
 }
