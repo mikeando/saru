@@ -29,7 +29,6 @@ testtag02.bash : OK\n\
 "
 
 
-lines = procstdout.splitlines()
 if ( procstdout!= expectedOutput ):
   print >> sys.stderr, "output not as expected"
   print >> sys.stderr, "EXPECTED:"

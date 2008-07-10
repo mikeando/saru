@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+import sys
+import subprocess
+import os
+
+
+runProc = subprocess.Popen( [ "../src/saru-run-test","single", "../fakeproject/unknown.fmt" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+retcode = runProc.wait()
+
+if( retcode != 1 ) :
+  print >> sys.stderr, "returned non-one exit code"
+  (procstdout, procstderr) = runProc.communicate()
+  print >> sys.stderr, procstderr
+  print >> sys.stderr, procstdout
+  exit(1)
+
+(procstdout, procstderr) = runProc.communicate()
+
+expectedOutput=""
+expectedError="Dont Know"
+if ( procstdout!= expectedOutput ):
+  print >> sys.stderr, "output not as expected"
+  print >> sys.stderr, "EXPECTED:"
+  print >> sys.stderr, expectedOutput
+  print >> sys.stderr, "ACTUAL:"
+  print >> sys.stderr, procstdout
+  exit(1)
+
+if ( procstderr!= expectedError ):
+  print >> sys.stderr, "stderr not as expected"
+  print >> sys.stderr, "EXPECTED:"
+  print >> sys.stderr, expectedError
+  print >> sys.stderr, "ACTUAL:"
+  print >> sys.stderr, procstderr
+  exit(1)
+
+
+exit(0)
