@@ -7,9 +7,172 @@ import os
 import shutil
 
 from stat import *
+  
+# How was this script run?
+sarubinpath = os.path.dirname( os.path.abspath( sys.argv[0] ) )
+saruparse = os.path.normpath( sarubinpath + "/saru-parse" )
+saruruntest = os.path.normpath( sarubinpath + "/saru-run-test" )
 
 def printUsage():
   print "USAGE: saru-run-test single filename"
+
+# saru-parse issaru xxxx .. what does it return?
+# General failure retcode = 1
+# Unsupported format retcode = 0, stdout = "UNKNOWN FORMAT"
+# supported format without saru info retcode = 0, stdout="NO"
+# supported format with saru info retcode = 0, stdout="YES"
+#
+def isSaru(fulltestname):
+  checkProcess = subprocess.Popen([ saruparse, "issaru", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  retcode = checkProcess.wait()
+  if(retcode!=0):
+    print "saru-run-test : saru-parse issaru check died with error code " + repr(retcode)
+    print checkProcess.communicate()[1]
+    exit(1)
+  retcode = checkProcess.communicate()[0].splitlines()[0] 
+  return (( retcode != "NO" ) and ( retcode != "UNKNOWN FORMAT"))
+
+def runSingleTest():
+  if ( len(sys.argv) != 3 ):
+    printUsage()
+    exit(1)
+
+  if ( os.path.isdir(sys.argv[2]) ):
+    print os.path.basename( sys.argv[0] )+" : Doesn't run on a directory yet."
+    exit(1)
+
+  if( not os.path.exists( sys.argv[2]) ):
+    print os.path.basename( sys.argv[0] )+" : nonexistant test "+ os.path.basename( sys.argv[2] )
+    exit(1)
+
+
+
+  fulltestname = sys.argv[2]
+  (testdir, testname) = os.path.split( fulltestname )
+  dotsaru =  os.path.normpath( testdir + "/.saru" )
+
+  if( not isSaru(fulltestname) ):
+    print "saru-run-test : file does not contain any saru test information"
+    exit(1)
+
+  parseProcess = subprocess.Popen([ saruparse, "dump", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  retcode = parseProcess.wait()
+  if(retcode!=0):
+    print "saru-run-test : saru-parse failed with error code " + repr(retcode)
+    print parseProcess.communicate()[1]
+    exit(1)
+
+  settings = parseProcess.communicate()[0]
+
+
+  if ( not os.path.isdir( dotsaru ) ):
+    if( os.path.exists( dotsaru ) ):
+      print >> sys.stderr, "saru-run-test : .saru object exists but is not directory!"
+      exit(1)
+    os.mkdir( dotsaru )
+
+  if ( not os.path.isdir( dotsaru+"/bin" ) ):
+    if( os.path.exists( dotsaru+"/bin" ) ):
+      print >> sys.stderr, "saru-run-test : .saru/bin object exists but is not directory!"
+      exit(1)
+    os.mkdir( dotsaru+"/bin" )
+
+  extension = os.path.splitext(testname)[1]
+  if(extension==".cpp"):
+  #CPP Files get compiled via a makefile
+    makefilename = os.path.normpath( dotsaru+"/"+testname+".make" )
+    makefile = open( makefilename,"w")
+
+    # BUILD A MAKE FILE...
+    # TODO Make these use the settings taht got read in from the saru-parse stage
+    print >> makefile, testname + ".test : " + testname
+    print >> makefile, "\tg++ " + testname + " -o .saru/bin/" + testname + ".test"
+    makefile.close()
+    
+    # Lets try making it...
+    # TODO Make these use the settings taht got read in from the saru-parse stage
+    makeProcess = subprocess.Popen(["/usr/bin/make", "-C", testdir, "--file", makefilename], stdout=subprocess.PIPE, stderr=subprocess.PIPE  )
+    retcode=makeProcess.wait()
+    
+    if(retcode!=0):
+      print >> sys.stderr, "saru-run-test : make failed with error code " + repr(retcode)
+      make_stdout, make_stderr = makeProcess.communicate()
+      print >> sys.stderr, make_stderr
+      print >> sys.stderr, make_stdout
+      exit(1)
+    executablename = os.path.normpath(dotsaru+"/bin/"+testname+".test")
+  elif(extension==".py"):
+    executablename = os.path.normpath( dotsaru+"/bin/"+testname )
+    shutil.copyfile( fulltestname, executablename) 
+  elif(extension==".bash"):
+    executablename = os.path.normpath( dotsaru+"/bin/"+testname )
+    shutil.copyfile( fulltestname, executablename) 
+  else:
+    print >> sys.stderr, "Unknown extension on file "+testname
+    exit(1)
+
+  # Lets try running it...
+  os.chmod( executablename, S_IREAD | S_IWUSR | S_IXUSR )
+  testProcess = subprocess.Popen([ executablename ], stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
+  retcode=testProcess.wait()
+
+#TODO: Why is this printing to stdout rather than stderr
+  if(retcode!=0):
+    print  "saru-run-test : execution of test failed with error code " + repr(retcode)
+    test_stdout, test_stderr = testProcess.communicate()
+    if(test_stdout!="") :
+      print test_stdout
+    if(test_stderr!="") :
+      print test_stderr
+    exit(1)
+
+  print "OK"
+    
+  exit(0)
+
+def runSuiteOfTests():
+  suitepath = sys.argv[2]
+  if ( not os.path.isdir(suitepath ) ):
+    print >> sys.stderr, os.path.basename( sys.argv[0] )+" : requires a directory name."
+    exit(1)
+  filelist = os.listdir(suitepath)
+  filelist.sort()
+  filelist = [ os.path.normpath(suitepath+"/"+x) for x in filelist ] 
+  filelist = [ x for x in filelist if os.path.isfile(x) ]
+  filelist = [ x for x in filelist if isSaru(x) ]
+  passcount = 0
+  for f in filelist:
+    print os.path.basename(f) + " :",
+  
+    runProcess = subprocess.Popen([ saruruntest, "single", f], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    retcode = runProcess.wait()
+    if(retcode!=0):
+      (runstdout,runstderr) = runProcess.communicate()
+      if(runstdout=="saru-run-test : execution of test failed with error code 1\n"):
+        print "FAILED"
+      else:
+        print "FAILED???"
+        print "  STDOUT :" + runstdout
+        print "  STDERR :" + runstderr 
+    else:
+      (runstdout,runstderr) = runProcess.communicate()
+      if(runstdout=="OK\n"):
+        print "OK"
+        passcount = passcount + 1
+      else:
+        print "???"
+        print "  STDOUT :" + runstdout
+        print "  STDERR :" + runstderr 
+  
+#  (dirpath, dirnames, filenames ) = os.walk(sys.argv[2])
+#  print dirpath
+#  print dirnames
+#  print filenames
+  print repr(passcount) + " / " + repr( len(filelist) )
+  if( passcount == len(filelist) ):
+    exit(0)
+  exit(1)
+
 
 
 if (len(sys.argv) < 2):
@@ -17,113 +180,14 @@ if (len(sys.argv) < 2):
   exit(1) 
 
 
-if ( sys.argv[1] != "single" ):
-  printUsage()
-  exit(1) 
+if ( sys.argv[1] == "single" ):
+  runSingleTest()
+elif ( sys.argv[1] == "suite" ):
+  runSuiteOfTests()
 
-if ( len(sys.argv) != 3 ):
-  printUsage()
-  exit(1)
+print >> sys.stderr,"saru-run-test : Unknown mode "+sys.argv[1]
+printUsage()
+exit(1) 
 
-if ( os.path.isdir(sys.argv[2]) ):
-  print os.path.basename( sys.argv[0] )+" : Doesn't run on a directory yet."
-  exit(1)
-
-if( not os.path.exists( sys.argv[2]) ):
-  print os.path.basename( sys.argv[0] )+" : nonexistant test "+ os.path.basename( sys.argv[2] )
-  exit(1)
-
-# How was this script run?
-sarubinpath = os.path.dirname( os.path.abspath( sys.argv[0] ) )
-saruparse = os.path.normpath( sarubinpath + "/saru-parse" )
-
-
-fulltestname = sys.argv[2]
-(testdir, testname) = os.path.split( fulltestname )
-dotsaru =  os.path.normpath( testdir + "/.saru" )
-
-checkProcess = subprocess.Popen([ saruparse, "issaru", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-retcode = checkProcess.wait()
-if(retcode!=0):
-  print "saru-run-test : saru-parse issaru check died with error code " + repr(retcode)
-  print checkProcess.communicate()[1]
-  exit(1)
-if ( checkProcess.communicate()[0].splitlines()[0] == "NO" ):
-  print "saru-run-test : file does not contain any saru test information"
-  exit(1)
-
-parseProcess = subprocess.Popen([ saruparse, "dump", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-retcode = parseProcess.wait()
-if(retcode!=0):
-  print "saru-run-test : saru-parse failed with error code " + repr(retcode)
-  print parseProcess.communicate()[1]
-  exit(1)
-
-settings = parseProcess.communicate()[0]
-
-
-if ( not os.path.isdir( dotsaru ) ):
-  if( os.path.exists( dotsaru ) ):
-    print >> sys.stderr, "saru-run-test : .saru object exists but is not directory!"
-    exit(1)
-  os.mkdir( dotsaru )
-
-if ( not os.path.isdir( dotsaru+"/bin" ) ):
-  if( os.path.exists( dotsaru+"/bin" ) ):
-    print >> sys.stderr, "saru-run-test : .saru/bin object exists but is not directory!"
-    exit(1)
-  os.mkdir( dotsaru+"/bin" )
-
-extension = os.path.splitext(testname)[1]
-if(extension==".cpp"):
-#CPP Files get compiled via a makefile
-  makefilename = os.path.normpath( dotsaru+"/"+testname+".make" )
-  makefile = open( makefilename,"w")
-
-  # BUILD A MAKE FILE...
-  # TODO Make these use the settings taht got read in from the saru-parse stage
-  print >> makefile, testname + ".test : " + testname
-  print >> makefile, "\tg++ " + testname + " -o .saru/bin/" + testname + ".test"
-  makefile.close()
-  
-  # Lets try making it...
-  # TODO Make these use the settings taht got read in from the saru-parse stage
-  makeProcess = subprocess.Popen(["/usr/bin/make", "-C", testdir, "--file", makefilename], stdout=subprocess.PIPE, stderr=subprocess.PIPE  )
-  retcode=makeProcess.wait()
-  
-  if(retcode!=0):
-    print >> sys.stderr, "saru-run-test : make failed with error code " + repr(retcode)
-    make_stdout, make_stderr = makeProcess.communicate()
-    print >> sys.stderr, make_stderr
-    print >> sys.stderr, make_stdout
-    exit(1)
-  executablename = os.path.normpath(dotsaru+"/bin/"+testname+".test")
-elif(extension==".py"):
-  executablename = os.path.normpath( dotsaru+"/bin/"+testname )
-  shutil.copyfile( fulltestname, executablename) 
-elif(extension==".bash"):
-  executablename = os.path.normpath( dotsaru+"/bin/"+testname )
-  shutil.copyfile( fulltestname, executablename) 
-else:
-  print >> sys.stderr, "Unknown extension on file "+testname
-  exit(1)
-
-# Lets try running it...
-os.chmod( executablename, S_IREAD | S_IWUSR | S_IXUSR )
-testProcess = subprocess.Popen([ executablename ], stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
-retcode=testProcess.wait()
-
-if(retcode!=0):
-  print "saru-run-test : execution of test failed with error code " + repr(retcode)
-  test_stdout, test_stderr = testProcess.communicate()
-  if(test_stdout!="") :
-    print test_stdout
-  if(test_stderr!="") :
-    print test_stderr
-  exit(1)
-
-print "OK"
-  
-exit(0)
 
 
