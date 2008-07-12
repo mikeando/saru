@@ -18,7 +18,7 @@ if( retcode != 1 ) :
 (procstdout, procstderr) = runProc.communicate()
 
 expectedOutput=""
-expectedError="Dont Know"
+expectedError="saru-run-test : file is of unknown format\n"
 if ( procstdout!= expectedOutput ):
   print >> sys.stderr, "output not as expected"
   print >> sys.stderr, "EXPECTED:"

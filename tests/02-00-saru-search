@@ -8,18 +8,33 @@ import os
 searchProc = subprocess.Popen( [ "../src/saru-search", "tag", "testtag", "../fakeproject" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 retcode = searchProc.wait()
 
+
+
+(procstdout, procstderr) = searchProc.communicate()
 if( retcode != 0 ) :
+  print >> sys.stderr, "Wrong return code"
+  print procstdout
+  print procstderr
   exit(1)
 
-com = searchProc.communicate()[0]
-lines = com.splitlines()
-if ( len(lines)!= 3 ):
+
+expectedstdout="\
+../fakeproject/testtag01.cpp\n\
+../fakeproject/testtag02.bash\n\
+../fakeproject/testtag03.py\n\
+"
+
+if ( procstdout != expectedstdout ):
+  print >> sys.stderr, "stdout not as expected"
+  print >> sys.stderr, "EXPECTED:"
+  print >> sys.stderr, expectedstdout
+  print >> sys.stderr, "ACTUAL:"
+  print >> sys.stderr, procstdout
   exit(1)
-if ( lines[0] != "../fakeproject/testtag01.cpp" ):
+
+if ( procstderr != "" ):
+  print >> sys.stderr, "stderr not empty as expected"
+  print >> sys.stderr, procstderr
   exit(1)
-if ( lines[1] != "../fakeproject/testtag02.bash" ):
-  exit(1)
-if ( lines[1] != "../fakeproject/testtag03.py" ):
-  exit(1)
-exit(0)
+
 

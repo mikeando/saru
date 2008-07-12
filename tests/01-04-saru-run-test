@@ -22,10 +22,12 @@ if ( len(lines)!= 0 ):
 
 expectedOutput="\
 failingtest.bash : FAILED\n\
+failingtest.py : FAILED\n\
 passingtest.bash : OK\n\
 testtag01.cpp : OK\n\
 testtag02.bash : OK\n\
-3 / 4\n\
+testtag03.py : OK\n\
+4 / 6\n\
 "
 
 

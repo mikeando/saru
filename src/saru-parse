@@ -1,15 +1,43 @@
 #!/usr/bin/env python
 
-# TODO : This needs a bunch of different modes to run in...
+# This has a bunch of different modes to run in...
 # dump which dumps all the saru tags
 # issaru which just says whether or not the file is saru printing "YES" or "NO"
 # get xxx which prints any tags matching xxx.
 
 
-import sys;
-import re;
+import sys
+import re
 import os
 
+# Get a list of  all the SARU tags in a python test file
+def parsePythonFile( infile ):
+  pattern_directive = re.compile(r"^\s*#\s*SARU\s*:\s*(\S+)(.*)$")
+  pattern_comment = re.compile(r"^\s*#")
+  pattern_empty = re.compile(r"^\s*$")
+  settings={}
+
+  for line in infile:
+    if( pattern_empty.search(line) ) :
+      continue
+    match = pattern_directive.search(line); 
+    if ( match ):
+      key = match.group(1)
+      value = match.group(2)
+      if settings.has_key(key):
+        settings[key].append(value.strip())
+      else:
+        settings[key]=[ value.strip() ]
+      continue
+    if ( pattern_comment.search(line) ):
+      continue
+    break
+  return settings
+  
+
+
+
+# Get a list of  all the SARU tags in a c++ test file
 def parseCXXFile( infile ):
   pattern_directive = re.compile(r"^\s*//\s*SARU\s*:\s*(\S+)(.*)$")
   pattern_comment = re.compile(r"^\s*//")
@@ -33,6 +61,10 @@ def parseCXXFile( infile ):
     break
   return settings
 
+
+
+
+# Get a list of  all the SARU tags in a bash test file
 def parseBashFile( infile ):
   pattern_directive = re.compile(r"^\s*#\s*SARU\s*:\s*(\S+)(.*)$")
   pattern_comment = re.compile(r"^\s*#")
@@ -57,6 +89,8 @@ def parseBashFile( infile ):
   return settings
 
 
+knownFileTypes = { ".cpp":parseCXXFile, ".bash":parseBashFile, ".py":parsePythonFile }
+
 def printUsage():
   print >> sys.stderr, "USAGE: saru-parse dump file"
   print >> sys.stderr, "USAGE: saru-parse issaru file"
@@ -76,6 +110,10 @@ def doSaruParseDump():
   fulltestname = sys.argv[2]
   (testdir, testname) = os.path.split( fulltestname )
 
+  fileExtension = os.path.splitext(testname)[1] 
+  if ( not knownFileTypes.has_key( fileExtension ) ):
+    print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
+    exit(1)
 
   try:
     infile = open(fulltestname, "r")
@@ -83,27 +121,15 @@ def doSaruParseDump():
     print >> sys.stderr, "saru-parse: Unable to open "+fulltestname
     exit(1)
 
-  if( os.path.splitext(testname)[1] == ".cpp" ):
-    settings = parseCXXFile(infile)
-    if ( settings=={} ):
-      print >> sys.stderr, "saru-parse: No settings in file"
-      exit(1)
-    for k,v in settings.iteritems():
-       for vv in v:
-         print k+" : "+vv
-    exit(0)
-  if( os.path.splitext(testname)[1] == ".bash" ):
-    settings = parseBashFile(infile)
-    if ( settings=={} ):
-      print >> sys.stderr, "saru-parse: No settings in file"
-      exit(1)
-    for k,v in settings.iteritems():
-       for vv in v:
-         print k+" : "+vv
-    exit(0)
-  else:
-    print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
+  settings = knownFileTypes[fileExtension](infile)
+
+  if ( settings=={} ):
+    print >> sys.stderr, "saru-parse: No settings in file"
     exit(1)
+  for k,v in settings.iteritems():
+     for vv in v:
+       print k+" : "+vv
+  exit(0)
 
 def doSaruParseIsSaru():
   if(len(sys.argv)!=3):
@@ -117,29 +143,23 @@ def doSaruParseIsSaru():
   fulltestname = sys.argv[2]
   (testdir, testname) = os.path.split( fulltestname )
 
+  fileExtension = os.path.splitext(testname)[1] 
+  if ( not knownFileTypes.has_key( fileExtension ) ):
+    print "UNKNOWN FORMAT"
+    exit(0)
+
   try:
     infile = open(fulltestname, "r")
   except IOError:
     print >> sys.stderr, "saru-parse: Unable to open "+fulltestname
     exit(1)
 
-  if( os.path.splitext(testname)[1] == ".cpp" ):
-    settings = parseCXXFile(infile)
-    if ( settings=={} ):
-      print "NO"
-    else:
-      print "YES"
-    exit(0)
-  if( os.path.splitext(testname)[1] == ".bash" ):
-    settings = parseBashFile(infile)
-    if ( settings=={} ):
-      print "NO"
-    else:
-      print "YES"
-    exit(0)
+  settings = knownFileTypes[fileExtension](infile)
+  if ( settings=={} ):
+    print "NO"
   else:
-    print "UNKNOWN FORMAT"
-    exit(0)
+    print "YES"
+  exit(0)
 
 def doSaruParseGetKey():
   if(len(sys.argv)!=4):
@@ -154,6 +174,10 @@ def doSaruParseGetKey():
   fulltestname = sys.argv[3]
   (testdir, testname) = os.path.split( fulltestname )
 
+  fileExtension = os.path.splitext(testname)[1] 
+  if ( not knownFileTypes.has_key( fileExtension ) ):
+    print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
+    exit(1)
 
   try:
     infile = open(fulltestname, "r")
@@ -161,21 +185,11 @@ def doSaruParseGetKey():
     print >> sys.stderr, "saru-parse: Unable to open "+fulltestname
     exit(1)
 
-  if( os.path.splitext(testname)[1] == ".cpp" ):
-    settings = parseCXXFile(infile)
-    if( settings.has_key( key )) :
-       for val in settings[key] :
-          print val
-    exit(0)
-  if( os.path.splitext(testname)[1] == ".bash" ):
-    settings = parseBashFile(infile)
-    if( settings.has_key( key )) :
-       for val in settings[key] :
-          print val
-    exit(0)
-  else:
-    print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
-    exit(1)
+  settings = knownFileTypes[fileExtension](infile)
+  if( settings.has_key( key )) :
+     for val in settings[key] :
+        print val
+  exit(0)
 
 if ( len(sys.argv) == 1 ):
   printUsage()
