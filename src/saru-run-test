@@ -42,7 +42,7 @@ def runSingleTest():
     exit(1)
 
   if( not os.path.exists( sys.argv[2]) ):
-    print os.path.basename( sys.argv[0] )+" : nonexistant test "+ os.path.basename( sys.argv[2] )
+    print >> sys.stderr, os.path.basename( sys.argv[0] )+" : nonexistant test "+ os.path.basename( sys.argv[2] )
     exit(1)
 
 
