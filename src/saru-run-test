@@ -12,9 +12,12 @@ from stat import *
 sarubinpath = os.path.dirname( os.path.abspath( sys.argv[0] ) )
 saruparse = os.path.normpath( sarubinpath + "/saru-parse" )
 saruruntest = os.path.normpath( sarubinpath + "/saru-run-test" )
+sarusearch = os.path.normpath( sarubinpath + "/saru-search" )
 
 def printUsage():
-  print "USAGE: saru-run-test single filename"
+  print "USAGE: saru-run-test single <filename>"
+  print "USAGE: saru-run-test suite <dirname>"
+  print "USAGE: saru-run-test tag <tagname> <dirname>"
 
 # saru-parse issaru xxxx .. what does it return?
 # General failure retcode = 1
@@ -179,6 +182,56 @@ def runSuiteOfTests():
     exit(0)
   exit(1)
 
+def runTaggedTests():
+  tagname = sys.argv[2]
+  tagpath = sys.argv[3]
+  if ( not os.path.isdir(tagpath ) ):
+    print >> sys.stderr, os.path.basename( sys.argv[0] )+" : requires a directory name."
+    exit(1)
+
+  tagProcess = subprocess.Popen( [ sarusearch, "tag", tagname, tagpath ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  retcode = tagProcess.wait()
+  (tagstdout,tagstderr) = tagProcess.communicate()
+  if(retcode!=0):
+    print "saru-run-test : saru-search failed with value " + repr(recode)
+    print "  STDOUT :" + tagstdout
+    print "  STDERR :" + tagstderr 
+  
+  filelist = tagstdout .splitlines()
+  filelist = [ os.path.normpath(tagpath+"/"+x) for x in filelist ] 
+
+  passcount = 0
+  for f in filelist:
+    print os.path.basename(f) + " :",
+  
+    runProcess = subprocess.Popen([ saruruntest, "single", f], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    retcode = runProcess.wait()
+    if(retcode!=0):
+      (runstdout,runstderr) = runProcess.communicate()
+      if(runstdout=="saru-run-test : execution of test failed with error code 1\n"):
+        print "FAILED"
+      else:
+        print "FAILED???"
+        print "  STDOUT :" + runstdout
+        print "  STDERR :" + runstderr 
+    else:
+      (runstdout,runstderr) = runProcess.communicate()
+      if(runstdout=="OK\n"):
+        print "OK"
+        passcount = passcount + 1
+      else:
+        print "???"
+        print "  STDOUT :" + runstdout
+        print "  STDERR :" + runstderr 
+  
+#  (dirpath, dirnames, filenames ) = os.walk(sys.argv[2])
+#  print dirpath
+#  print dirnames
+#  print filenames
+  print repr(passcount) + " / " + repr( len(filelist) )
+  if( passcount == len(filelist) ):
+    exit(0)
+  exit(1)
 
 
 if (len(sys.argv) < 2):
@@ -190,6 +243,8 @@ if ( sys.argv[1] == "single" ):
   runSingleTest()
 elif ( sys.argv[1] == "suite" ):
   runSuiteOfTests()
+elif (sys.argv[1] == "tag" ):
+  runTaggedTests()
 
 print >> sys.stderr,"saru-run-test : Unknown mode "+sys.argv[1]
 printUsage()
