@@ -140,6 +140,9 @@ def runSingleTest():
   exit(0)
 
 def runSuiteOfTests():
+  if len(sys.argv)!=3:
+    print >> sys.stderr, "saru-run-test : suite mode expects one additional argument"
+    exit(1)
   suitepath = sys.argv[2]
   if ( not os.path.isdir(suitepath ) ):
     print >> sys.stderr, os.path.basename( sys.argv[0] )+" : requires a directory name."
