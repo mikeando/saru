@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+# This test is for a bug that was/is occuring on running of
+# saru-run-test suite .
+# In particular the .saru subdirectory is being created in /.saru
+# rather than ./.saru
+# which is really bad / sad
+
+import sys
+import subprocess
+import os
+import shutil
+
+# Check that the /.saru subdirectory doesn't exist.
+
+if( os.path.isdir("/.saru") ):
+  print >> sys.stderr, "Incorrect directory /.saru exists before tests were run\n"
+  exit(1)
+
+# Blow away any preexisting .saru directory.
+if (os.path.isdir("../fakeproject/.saru") ):
+  shutil.rmtree("../fakeproject/.saru")
+if (os.path.isdir("../fakeproject/.saru") ):
+  print >> sys.stderr, "Unable to remove ../fakeprojet/.saru\n"
+  exit(1)
+
+# CD to the right place and run the tests.
+origdir = os.getcwd()
+os.chdir("../fakeproject")
+
+runProc = subprocess.Popen( [ "../src/saru-run-test","suite", "." ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+retcode = runProc.wait()
+
+# CD back to where we came from
+os.chdir(origdir)
+
+# Check that we created the right directory
+if ( not os.path.isdir("../fakeproject/.saru") ):
+  print >> sys.stderr, "Did not create expected ../fakeproject/.saru directory\n"
+  exit(1)
+
+# Check that we didn't create the wrong directory
+if ( os.path.isdir("/.saru") ):
+  print >> sys.stderr, "Created wrong /.saru directory"
+  exit(1)
+
+exit(0)
