@@ -96,8 +96,16 @@ def runSingleTest():
 
     # BUILD A MAKE FILE...
     # TODO Make these use the settings taht got read in from the saru-parse stage
+    print >> makefile, "INCLUDES=\n"
+    
+    includeRegExp = re.compile(r"\s*CxxInclude\s*:\s*(.*)$")
+    for confline in settings.splitlines():
+      match = includeRegExp.search(confline)
+      if ( match ):
+        for incdir in match.group(1).split():
+          print >> makefile, "INCLUDES+= -I"+incdir+"\n"
     print >> makefile, testname + ".test : " + testname
-    print >> makefile, "\tg++ " + testname + " -o .saru/bin/" + testname + ".test"
+    print >> makefile, "\tg++ " + testname + " -o .saru/bin/" + testname + ".test $(INCLUDES)"
     makefile.close()
     
     # Lets try making it...
