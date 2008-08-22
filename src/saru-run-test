@@ -97,15 +97,28 @@ def runSingleTest():
     # BUILD A MAKE FILE...
     # TODO Make these use the settings taht got read in from the saru-parse stage
     print >> makefile, "INCLUDES=\n"
+    print >> makefile, "EXTRAOBJECTS=\n"
+    print >> makefile, "CXXFLAGS=\n"
     
     includeRegExp = re.compile(r"\s*CxxInclude\s*:\s*(.*)$")
+    extraObjsRegExp = re.compile(r"\s*CxxExtraObjects\s*:\s*(.*)$")
+    cxxFlagsRegExp = re.compile(r"\s*CxxFlags\s*:\s*(.*)$")
+
     for confline in settings.splitlines():
       match = includeRegExp.search(confline)
       if ( match ):
         for incdir in match.group(1).split():
           print >> makefile, "INCLUDES+= -I"+incdir+"\n"
+      match = extraObjsRegExp.search(confline)
+      if ( match ):
+        for obj in match.group(1).split():
+          print >> makefile, "EXTRAOBJECTS+= "+obj+"\n"
+      match = cxxFlagsRegExp.search(confline)
+      if ( match ):
+          print >> makefile, "CXXFLAGS+= "+match.group(1)+"\n"
+              
     print >> makefile, testname + ".test : " + testname
-    print >> makefile, "\tg++ " + testname + " -o .saru/bin/" + testname + ".test $(INCLUDES)"
+    print >> makefile, "\tg++ $(CXXFLAGS) " + testname + " -o .saru/bin/" + testname + ".test $(INCLUDES) $(EXTRAOBJECTS)"
     makefile.close()
     
     # Lets try making it...
