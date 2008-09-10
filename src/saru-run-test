@@ -5,6 +5,7 @@ import re
 import subprocess
 import os
 import shutil
+import datetime
 
 from stat import *
   
@@ -204,6 +205,13 @@ def runSuiteOfTests():
 #  print dirnames
 #  print filenames
   print repr(passcount) + " / " + repr( len(filelist) )
+  try:
+    f = open( os.path.normpath(suitepath+"/saru.progress" ), "a" )
+    print >> f, datetime.datetime.now().isoformat(),
+    print >> f, " "+str(passcount)+" "+str( len(filelist) )
+  except IOError:
+    print "Unable to write results to log file"
+
   if( passcount == len(filelist) ):
     exit(0)
   exit(1)
