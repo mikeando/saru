@@ -30,7 +30,7 @@ failsToCompile.cpp : FAILED???\n\
 failsToCompile.cpp:3:2: error: #error \"Intentionally does not compile\"\n\
 make: *** [failsToCompile.cpp.test] Error 1\n\
 \n\
-g++ failsToCompile.cpp -o .saru/bin/failsToCompile.cpp.test \n\
+g++  failsToCompile.cpp -o .saru/bin/failsToCompile.cpp.test  \n\
 \n\
 \n\
 failsToRun.cpp : FAILED???\n\
