@@ -75,7 +75,16 @@ def runSingleTest():
     exit(1)
 
   settings = parseProcess.communicate()[0]
-
+  filesettings = {};
+  for confline in settings.splitlines():
+    kv = confline.split( ":", 1)
+    if len( kv )==2:
+      key = kv[0].strip()
+      value = kv[1].strip()
+      if key in filesettings:
+        filesettings[ key ].append( value )
+      else:
+        filesettings[ key ] = [ value ]
 
   if ( not os.path.isdir( dotsaru ) ):
     if( os.path.exists( dotsaru ) ):
@@ -105,19 +114,16 @@ def runSingleTest():
     extraObjsRegExp = re.compile(r"\s*CxxExtraObjects\s*:\s*(.*)$")
     cxxFlagsRegExp = re.compile(r"\s*CxxFlags\s*:\s*(.*)$")
 
-    for confline in settings.splitlines():
-      match = includeRegExp.search(confline)
-      if ( match ):
-        for incdir in match.group(1).split():
-          print >> makefile, "INCLUDES+= -I"+incdir+"\n"
-      match = extraObjsRegExp.search(confline)
-      if ( match ):
-        for obj in match.group(1).split():
-          print >> makefile, "EXTRAOBJECTS+= "+obj+"\n"
-      match = cxxFlagsRegExp.search(confline)
-      if ( match ):
-          print >> makefile, "CXXFLAGS+= "+match.group(1)+"\n"
-              
+    if "CxxInclude" in filesettings:
+      for incdir in " ".join(filesettings["CxxInclude"]).split():
+        print >> makefile, "INCLUDES+= -I"+incdir+"\n"
+    if "CxxExtraObjects" in filesettings:
+      for obj in " ".join(filesettings["CxxExtraObjects"]).split():
+        print >> makefile, "EXTRAOBJECTS+= "+obj+"\n"
+    if "CxxFlags" in filesettings:
+      for flags in filesettings["CxxFlags"]:
+        print >> makefile, "CXXFLAGS+= "+flags+"\n"
+    
     print >> makefile, testname + ".test : " + testname
     print >> makefile, "\tg++ $(CXXFLAGS) " + testname + " -o .saru/bin/" + testname + ".test $(INCLUDES) $(EXTRAOBJECTS)"
     makefile.close()
