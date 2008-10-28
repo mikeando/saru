@@ -8,12 +8,18 @@ import shutil
 import datetime
 
 from stat import *
-  
-# How was this script run?
-sarubinpath = os.path.dirname( os.path.abspath( sys.argv[0] ) )
-saruparse = os.path.normpath( sarubinpath + "/saru-parse" )
-saruruntest = os.path.normpath( sarubinpath + "/saru-run-test" )
-sarusearch = os.path.normpath( sarubinpath + "/saru-search" )
+
+class SaruPaths:
+  "Class that contains the required paths"
+  def __init__( self, callingScriptPath ):
+    # How was this script run?
+    self.sarubinpath = os.path.dirname( os.path.abspath( callingScriptPath  ) )
+    self.saruparse = os.path.normpath( self.sarubinpath + "/saru-parse" )
+    self.saruruntest = os.path.normpath( self.sarubinpath + "/saru-run-test" )
+    self.sarusearch = os.path.normpath( self.sarubinpath + "/saru-search" )
+
+
+sarupath = SaruPaths(sys.argv[0])
 
 def printUsage():
   print "USAGE: saru-run-test single <filename>"
@@ -27,7 +33,7 @@ def printUsage():
 # supported format with saru info retcode = 0, stdout="YES"
 #
 def isSaru(fulltestname):
-  checkProcess = subprocess.Popen([ saruparse, "issaru", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  checkProcess = subprocess.Popen([ sarupath.saruparse, "issaru", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   retcode = checkProcess.wait()
   if(retcode!=0):
     print "saru-run-test : saru-parse issaru check died with error code " + repr(retcode)
@@ -67,7 +73,7 @@ def runSingleTest():
       print >> sys.stderr, "saru-run-test : unknwon status code \""+isSaruStatus[1] +"\" from saru-parse issaru"
     exit(1)
 
-  parseProcess = subprocess.Popen([ saruparse, "dump", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  parseProcess = subprocess.Popen([ sarupath.saruparse, "dump", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   retcode = parseProcess.wait()
   if(retcode!=0):
     print "saru-run-test : saru-parse failed with error code " + repr(retcode)
@@ -186,7 +192,7 @@ def runSuiteOfTests():
   for f in filelist:
     print os.path.basename(f) + " :",
   
-    runProcess = subprocess.Popen([ saruruntest, "single", f], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    runProcess = subprocess.Popen([ sarupath.saruruntest, "single", f], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     retcode = runProcess.wait()
     if(retcode!=0):
       (runstdout,runstderr) = runProcess.communicate()
@@ -229,7 +235,7 @@ def runTaggedTests():
     print >> sys.stderr, os.path.basename( sys.argv[0] )+" : requires a directory name."
     exit(1)
 
-  tagProcess = subprocess.Popen( [ sarusearch, "tag", tagname, tagpath ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  tagProcess = subprocess.Popen( [ sarupath.sarusearch, "tag", tagname, tagpath ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   retcode = tagProcess.wait()
   (tagstdout,tagstderr) = tagProcess.communicate()
   if(retcode!=0):
@@ -244,7 +250,7 @@ def runTaggedTests():
   for f in filelist:
     print os.path.basename(f) + " :",
   
-    runProcess = subprocess.Popen([ saruruntest, "single", f], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    runProcess = subprocess.Popen([ sarupath.saruruntest, "single", f], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     retcode = runProcess.wait()
     if(retcode!=0):
       (runstdout,runstderr) = runProcess.communicate()
