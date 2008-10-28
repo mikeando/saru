@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+
+# This test is to check that running saru on a cpp test will pick
+# up any CxxInclude tags in the file.
+#
+# saru-run-test single needsinclude.cpp
+
+import sys
+import subprocess
+import os
+import shutil
+import difflib
+
+# Blow away any preexisting .saru directory.
+if (os.path.isdir("../fakeproject/.saru") ):
+  shutil.rmtree("../fakeproject/.saru")
+if (os.path.isdir("../fakeproject/.saru") ):
+  print >> sys.stderr, "Unable to remove ../fakeprojet/.saru\n"
+  exit(1)
+
+# CD to the right place and run the tests.
+origdir = os.getcwd()
+os.chdir("../fakeproject")
+
+runProc = subprocess.Popen( [ "../src/saru-run-test","single", "subdir" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+(procstdout, procstderr) = runProc.communicate()
+
+os.chdir(origdir)
+
+expectedOutput="saru-run-test : Doesn't run on a directory yet.\n"
+
+
+if ( runProc.returncode!=1 ):
+  print "==FAILED==\n"
+  print "STDOUT: \n"
+  print procstdout
+  print "STDERR: \n"
+  print procstderr
+  exit(1)
+
+if(expectedOutput!=procstderr):
+  print >> sys.stderr, "output not as expected"
+  diff =  difflib.context_diff( procstderr.splitlines(), expectedOutput.splitlines() )
+  for l in diff:
+    print l 
+  exit(1)
+
+exit(0)

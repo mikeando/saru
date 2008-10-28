@@ -9,8 +9,14 @@ import datetime
 
 from stat import *
 
+class SaruBaseError(Exception):
+  """Base Class for handling non-test-failure errors in saru"""
+  def __init__( self, mesg ):
+    self.mesg = mesg
+
+
 class SaruPaths:
-  "Class that contains the required paths"
+  """Class that contains the required paths"""
   def __init__( self, callingScriptPath ):
     # How was this script run?
     self.sarubinpath = os.path.dirname( os.path.abspath( callingScriptPath  ) )
@@ -19,43 +25,20 @@ class SaruPaths:
     self.sarusearch = os.path.normpath( self.sarubinpath + "/saru-search" )
 
 class SingleTestRunner:
-  "Runs a single test"
-  def __init__(self, testname ):
-    self.testname = testname
-  
-  def run(self):
-    if ( os.path.isdir( self.testname ) ):
-      print os.path.basename( sys.argv[0] )+" : Doesn't run on a directory yet."
-      exit(1)
+  """Runs a single test"""
+  def __init__(self, fulltestname ):
+    self.fulltestname = fulltestname
+    (self.testdir, self.testname) = os.path.split( self.fulltestname )
+    if(self.testdir==""):
+      self.testdir="."
+    self.dotsaru =  os.path.normpath( self.testdir + "/.saru" )
 
-    if( not os.path.exists( self.testname ) ):
-      print >> sys.stderr, os.path.basename( sys.argv[0] )+" : nonexistant test "+ os.path.basename( sys.argv[2] )
-      exit(1)
-
-
-
-    fulltestname = self.testname
-    (testdir, testname) = os.path.split( fulltestname )
-    if(testdir==""):
-      testdir="."
-    dotsaru =  os.path.normpath( testdir + "/.saru" )
-
-    isSaruStatus = isSaru( fulltestname )
-    if( not isSaruStatus[0] ):
-      if( isSaruStatus[1] == "NO"):
-        print >> sys.stderr, "saru-run-test : file does not contain any saru test information"
-      elif ( isSaruStatus[1] == "UNKNOWN FORMAT"):
-        print >> sys.stderr, "saru-run-test : file is of unknown format"
-      else:
-        print >> sys.stderr, "saru-run-test : unknwon status code \""+isSaruStatus[1] +"\" from saru-parse issaru"
-      exit(1)
-
-    parseProcess = subprocess.Popen([ sarupath.saruparse, "dump", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  def getSettings( self ):
+    """Parses the output of "saru-parse dump" run on the test file an returns it as a dictionary"""
+    parseProcess = subprocess.Popen([ sarupath.saruparse, "dump", self.fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     retcode = parseProcess.wait()
     if(retcode!=0):
-      print "saru-run-test : saru-parse failed with error code " + repr(retcode)
-      print parseProcess.communicate()[1]
-      exit(1)
+      raise SaruBaseError( "saru-parse failed with error code " + repr(retcode) + "\n" +  parseProcess.communicate()[1] )
 
     settings = parseProcess.communicate()[0]
     filesettings = {};
@@ -68,23 +51,46 @@ class SingleTestRunner:
           filesettings[ key ].append( value )
         else:
           filesettings[ key ] = [ value ]
+    return filesettings
 
-    if ( not os.path.isdir( dotsaru ) ):
-      if( os.path.exists( dotsaru ) ):
-        print >> sys.stderr, "saru-run-test : .saru object exists but is not directory!"
-        exit(1)
-      os.mkdir( dotsaru )
+  # Returns a list of 
+  # [ [testname, testpassed, message] x N ] otherwise 
+  #  raises SaruBaseError on error
+  def run(self):
+    if ( os.path.isdir( self.fulltestname ) ):
+      raise SaruBaseError( "Doesn't run on a directory yet." )
 
-    if ( not os.path.isdir( dotsaru+"/bin" ) ):
-      if( os.path.exists( dotsaru+"/bin" ) ):
-        print >> sys.stderr, "saru-run-test : .saru/bin object exists but is not directory!"
-        exit(1)
-      os.mkdir( dotsaru+"/bin" )
+    if( not os.path.exists( self.fulltestname ) ):
+      raise SaruBaseError( "nonexistant test "+ os.path.basename( self.fulltestname ) )
 
-    extension = os.path.splitext(testname)[1]
+    isSaruStatus = isSaru( self.fulltestname )
+    if( not isSaruStatus[0] ):
+      if( isSaruStatus[1] == "NO"):
+        raise SaruBaseError( "file does not contain any saru test information" )
+      elif ( isSaruStatus[1] == "UNKNOWN FORMAT"):
+        raise SaruBaseError( "file is of unknown format" )
+      else:
+        raise SaruBaseError( "unknown status code \""+isSaruStatus[1] +"\" from saru-parse issaru" )
+
+    try:
+      filesettings = self.getSettings()
+    except SaruBaseError, e:
+      raise SaruBaseError( e.mesg )
+
+    if ( not os.path.isdir( self.dotsaru ) ):
+      if( os.path.exists( self.dotsaru ) ):
+        raise SaruBaseError( ".saru object exists but is not directory!" )
+      os.mkdir( self.dotsaru )
+
+    if ( not os.path.isdir( self.dotsaru+"/bin" ) ):
+      if( os.path.exists( self.dotsaru+"/bin" ) ):
+        raise SaruBaseError( ".saru/bin object exists but is not directory!" )
+      os.mkdir( self.dotsaru+"/bin" )
+
+    extension = os.path.splitext(self.testname)[1]
     if(extension==".cpp"):
     #CPP Files get compiled via a makefile
-      makefilename = os.path.normpath( dotsaru+"/"+testname+".make" )
+      makefilename = os.path.normpath( self.dotsaru+"/"+self.testname+".make" )
       makefile = open( makefilename,"w")
 
       # BUILD A MAKE FILE...
@@ -107,13 +113,13 @@ class SingleTestRunner:
         for flags in filesettings["CxxFlags"]:
           print >> makefile, "CXXFLAGS+= "+flags+"\n"
       
-      print >> makefile, testname + ".test : " + testname
-      print >> makefile, "\tg++ $(CXXFLAGS) " + testname + " -o .saru/bin/" + testname + ".test $(INCLUDES) $(EXTRAOBJECTS)"
+      print >> makefile, self.testname + ".test : " + self.testname
+      print >> makefile, "\tg++ $(CXXFLAGS) " + self.testname + " -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(EXTRAOBJECTS)"
       makefile.close()
       
       # Lets try making it...
       # TODO Make these use the settings taht got read in from the saru-parse stage
-      makeProcess = subprocess.Popen(["/usr/bin/make", "-C", testdir, "--file", makefilename], stdout=subprocess.PIPE, stderr=subprocess.PIPE  )
+      makeProcess = subprocess.Popen(["/usr/bin/make", "-C", self.testdir, "--file", makefilename], stdout=subprocess.PIPE, stderr=subprocess.PIPE  )
       retcode=makeProcess.wait()
       
       if(retcode!=0):
@@ -122,15 +128,15 @@ class SingleTestRunner:
         print >> sys.stderr, make_stderr
         print >> sys.stderr, make_stdout
         exit(1)
-      executablename = os.path.normpath(dotsaru+"/bin/"+testname+".test")
+      executablename = os.path.normpath(self.dotsaru+"/bin/"+self.testname+".test")
     elif(extension==".py"):
-      executablename = os.path.normpath( dotsaru+"/bin/"+testname )
-      shutil.copyfile( fulltestname, executablename) 
+      executablename = os.path.normpath( self.dotsaru+"/bin/"+self.testname )
+      shutil.copyfile( self.fulltestname, executablename) 
     elif(extension==".bash"):
-      executablename = os.path.normpath( dotsaru+"/bin/"+testname )
-      shutil.copyfile( fulltestname, executablename) 
+      executablename = os.path.normpath( self.dotsaru+"/bin/"+self.testname )
+      shutil.copyfile( self.fulltestname, executablename) 
     else:
-      print >> sys.stderr, "Unknown extension on file "+testname
+      print >> sys.stderr, "Unknown extension on file "+self.testname
       exit(1)
 
     # Lets try running it...
@@ -181,7 +187,11 @@ def runSingleTest():
     printUsage()
     exit(1)
   s = SingleTestRunner( sys.argv[2] )
-  s.run()
+  try:
+    result = s.run()
+  except SaruBaseError, e:
+    print >> sys.stderr, os.path.basename( sys.argv[0] ) +" : " + e.mesg
+    exit(1)
 
 def runSuiteOfTests():
   if len(sys.argv)!=3:
