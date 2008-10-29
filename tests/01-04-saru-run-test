@@ -25,19 +25,20 @@ expectedOutput="\
 failingtest.bash : FAILED\n\
 failingtest.py : FAILED\n\
 failsToCompile.cpp : FAILED???\n\
-  STDOUT :\n\
-  STDERR :saru-run-test : make failed with error code 2\n\
+==MESSAGE==\n\
+saru-run-test : make failed with error code 2\n\
+==STDOUT==\n\
+g++  failsToCompile.cpp -o .saru/bin/failsToCompile.cpp.test\n\
+==STDERR==\n\
 failsToCompile.cpp:3:2: error: #error \"Intentionally does not compile\"\n\
 make: *** [failsToCompile.cpp.test] Error 1\n\
 \n\
-g++  failsToCompile.cpp -o .saru/bin/failsToCompile.cpp.test  \n\
-\n\
 \n\
 failsToRun.cpp : FAILED???\n\
-  STDOUT :\n\
-  STDERR :saru-run-test : execution of test failed with error code 1\n\
+==MESSAGE==\n\
+saru-run-test : execution of test failed with error code 1\n\
+==STDERR==\n\
 Intentionaly returns 1\n\
-\n\
 \n\
 \n\
 needsinclude.cpp : OK\n\
