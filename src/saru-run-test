@@ -9,10 +9,14 @@ import datetime
 
 from stat import *
 
+
+
 class SaruBaseError(Exception):
   """Base Class for handling non-test-failure errors in saru"""
   def __init__( self, mesg ):
     self.mesg = mesg
+
+
 
 # saru-parse issaru xxxx .. what does it return?
 # General failure retcode = 1
@@ -29,6 +33,8 @@ def isSaru(fulltestname):
     exit(1)
   retcode = checkProcess.communicate()[0].splitlines()[0] 
   return ( (( retcode != "NO" ) and ( retcode != "UNKNOWN FORMAT")), retcode )
+
+
 
 def checkValidFile( fulltestname ):
   """Check that the file specified exists, is not a directory, is a recognised format, and is tagged as a saru test"""
@@ -48,6 +54,40 @@ def checkValidFile( fulltestname ):
       raise SaruBaseError( "unknown status code \""+isSaruStatus[1] +"\" from saru-parse issaru" )
 
 
+
+def checkDotSaru( dotsarupath ):
+  """Make sure the .saru and .saru/bin directories exist. Raise a SaruBaseError if they dont."""
+  if ( not os.path.isdir( dotsarupath ) ):
+    if( os.path.exists( dotsarupath ) ):
+      raise SaruBaseError( ".saru object exists but is not directory!" )
+    os.mkdir( dotsarupath )
+
+  if ( not os.path.isdir( dotsarupath+"/bin" ) ):
+    if( os.path.exists( dotsarupath+"/bin" ) ):
+      raise SaruBaseError( ".saru/bin object exists but is not directory!" )
+    os.mkdir( dotsarupath+"/bin" )
+
+def getSettings( fulltestname ):
+  """Parses the output of "saru-parse dump" run on the test file an returns it as a dictionary"""
+  parseProcess = subprocess.Popen([ sarupath.saruparse, "dump", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  retcode = parseProcess.wait()
+  if(retcode!=0):
+    raise SaruBaseError( "saru-parse failed with error code " + repr(retcode) + "\n" +  parseProcess.communicate()[1] )
+
+  settings = parseProcess.communicate()[0]
+  filesettings = {};
+  for confline in settings.splitlines():
+    kv = confline.split( ":", 1)
+    if len( kv )==2:
+      key = kv[0].strip()
+      value = kv[1].strip()
+      if key in filesettings:
+        filesettings[ key ].append( value )
+      else:
+        filesettings[ key ] = [ value ]
+  return filesettings
+
+
 class SaruTestResult:
   """Whether a test passes or fails and any other available information"""
   def __init__(self, testname, passed, mesg, stdout, stderr):
@@ -56,6 +96,8 @@ class SaruTestResult:
      self.mesg = mesg
      self.stdout = stdout
      self.stderr = stderr
+
+
 
 class SaruPaths:
   """Class that contains the required paths"""
@@ -67,47 +109,16 @@ class SaruPaths:
     self.sarusearch = os.path.normpath( self.sarubinpath + "/saru-search" )
 
 
+
 class SingleTestRunner:
   """Runs a single test"""
+
   def __init__(self, fulltestname ):
     self.fulltestname = fulltestname
     (self.testdir, self.testname) = os.path.split( self.fulltestname )
     if(self.testdir==""):
       self.testdir="."
     self.dotsaru =  os.path.normpath( self.testdir + "/.saru" )
-
-
-  def checkDotSaru( self ):
-    """Make sure the .saru and .saru/bin directories exist. Raise a SaruBaseError if they dont."""
-    if ( not os.path.isdir( self.dotsaru ) ):
-      if( os.path.exists( self.dotsaru ) ):
-        raise SaruBaseError( ".saru object exists but is not directory!" )
-      os.mkdir( self.dotsaru )
-
-    if ( not os.path.isdir( self.dotsaru+"/bin" ) ):
-      if( os.path.exists( self.dotsaru+"/bin" ) ):
-        raise SaruBaseError( ".saru/bin object exists but is not directory!" )
-      os.mkdir( self.dotsaru+"/bin" )
-
-  def getSettings( self ):
-    """Parses the output of "saru-parse dump" run on the test file an returns it as a dictionary"""
-    parseProcess = subprocess.Popen([ sarupath.saruparse, "dump", self.fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    retcode = parseProcess.wait()
-    if(retcode!=0):
-      raise SaruBaseError( "saru-parse failed with error code " + repr(retcode) + "\n" +  parseProcess.communicate()[1] )
-
-    settings = parseProcess.communicate()[0]
-    filesettings = {};
-    for confline in settings.splitlines():
-      kv = confline.split( ":", 1)
-      if len( kv )==2:
-        key = kv[0].strip()
-        value = kv[1].strip()
-        if key in filesettings:
-          filesettings[ key ].append( value )
-        else:
-          filesettings[ key ] = [ value ]
-    return filesettings
 
   # Returns a list of 
   # [ SaruTestResult x N ] otherwise 
@@ -116,9 +127,8 @@ class SingleTestRunner:
     """Actually run the test"""
     checkValidFile( self.fulltestname )
     self.checkDotSaru()
-
     try:
-      filesettings = self.getSettings()
+      filesettings = getSettings(self.fulltestname)
     except SaruBaseError, e:
       raise SaruBaseError( e.mesg )
 
@@ -182,12 +192,17 @@ class SingleTestRunner:
 
     return [ SaruTestResult( self.testname, True, "OK", test_stdout, test_stderr ) ]
 
+
+
 sarupath = SaruPaths(sys.argv[0])
+
+
 
 def printUsage():
   print "USAGE: saru-run-test single <filename>"
   print "USAGE: saru-run-test suite <dirname>"
   print "USAGE: saru-run-test tag <tagname> <dirname>"
+
 
 
 def runSingleTest():
@@ -209,6 +224,8 @@ def runSingleTest():
     else:
       print "OK"
       exit(0)
+
+
 
 def runSuiteOfTests():
   if len(sys.argv)!=3:
@@ -263,6 +280,8 @@ def runSuiteOfTests():
     exit(0)
   exit(1)
 
+
+
 def runTaggedTests():
   tagname = sys.argv[2]
   tagpath = sys.argv[3]
@@ -315,10 +334,10 @@ def runTaggedTests():
   exit(1)
 
 
+
 if (len(sys.argv) < 2):
   printUsage()
   exit(1) 
-
 
 if ( sys.argv[1] == "single" ):
   runSingleTest()
@@ -329,7 +348,5 @@ elif (sys.argv[1] == "tag" ):
 
 print >> sys.stderr,"saru-run-test : Unknown mode "+sys.argv[1]
 printUsage()
-exit(1) 
-
-
+exit(1) `:w
 
