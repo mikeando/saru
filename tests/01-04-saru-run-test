@@ -34,11 +34,12 @@ g++  failsToCompile.cpp -o .saru/bin/failsToCompile.cpp.test  \n\
 \n\
 \n\
 failsToRun.cpp : FAILED???\n\
-  STDOUT :saru-run-test : execution of test failed with error code 1\n\
+  STDOUT :\n\
+  STDERR :saru-run-test : execution of test failed with error code 1\n\
 Intentionaly returns 1\n\
 \n\
 \n\
-  STDERR :\n\
+\n\
 needsinclude.cpp : OK\n\
 passingtest.bash : OK\n\
 testtag01.cpp : OK\n\

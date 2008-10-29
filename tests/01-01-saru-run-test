@@ -14,20 +14,20 @@ if( retcode != 1 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-lines = procstderr.splitlines()
+lines = procstdout.splitlines()
 if ( len(lines)!= 0 ):
-  print >> sys.stderr, "Non-empty stderr"
-  print >> sys.stderr, procstderr
+  print >> sys.stdout, "Non-empty stdout"
+  print >> sys.stdout, procstdout
   exit(1)
 
-lines = procstdout.splitlines()
-if ( len(lines)!= 1 ):
-  print >> sys.stderr, "Wrong number of stdout lines"
-  print >> sys.stderr, procstdout
+lines = procstderr.splitlines()
+if ( len(lines)!= 3 ):
+  print >> sys.stderr, "Wrong number of stderr lines ("+str(len(lines)) + " instead of 1 )"
+  print >> sys.stderr, procstderr
   exit(1)
 if ( lines[0] != "saru-run-test : execution of test failed with error code 1"):
-  print >> sys.stderr, "Line of stdout not as sexpected"
-  print >> sys.stderr, procstdout
+  print >> sys.stderr, "Line of stderr not as sexpected"
+  print >> sys.stderr, procstderr
   exit(1)
 exit(0)
 

@@ -14,6 +14,14 @@ class SaruBaseError(Exception):
   def __init__( self, mesg ):
     self.mesg = mesg
 
+class SaruTestResult:
+  """Whether a test passes or fails and any other available information"""
+  def __init__(self, testname, passed, mesg, stdout, stderr):
+     self.testname = testname
+     self.passed = passed
+     self.mesg = mesg
+     self.stdout = stdout
+     self.stderr = stderr
 
 class SaruPaths:
   """Class that contains the required paths"""
@@ -54,7 +62,7 @@ class SingleTestRunner:
     return filesettings
 
   # Returns a list of 
-  # [ [testname, testpassed, message] x N ] otherwise 
+  # [ SaruTestResult x N ] otherwise 
   #  raises SaruBaseError on error
   def run(self):
     """Actually run the test"""
@@ -124,11 +132,8 @@ class SingleTestRunner:
       retcode=makeProcess.wait()
       
       if(retcode!=0):
-        print >> sys.stderr, "saru-run-test : make failed with error code " + repr(retcode)
         make_stdout, make_stderr = makeProcess.communicate()
-        print >> sys.stderr, make_stderr
-        print >> sys.stderr, make_stdout
-        exit(1)
+        return [ SaruTestResult( self.testname, False, "saru-run-test : make failed with error code " + repr(retcode), make_stdout, make_stderr ) ]
       executablename = os.path.normpath(self.dotsaru+"/bin/"+self.testname+".test")
     elif(extension==".py"):
       executablename = os.path.normpath( self.dotsaru+"/bin/"+self.testname )
@@ -146,19 +151,11 @@ class SingleTestRunner:
     retcode=testProcess.wait()
 
   #TODO: Why is this printing to stdout rather than stderr
+    test_stdout, test_stderr = testProcess.communicate()
     if(retcode!=0):
-      print  "saru-run-test : execution of test failed with error code " + repr(retcode)
-      test_stdout, test_stderr = testProcess.communicate()
-      if(test_stdout!="") :
-        print test_stdout
-      if(test_stderr!="") :
-        print test_stderr
-      exit(1)
+      return [ SaruTestResult( self.testname, False, "saru-run-test : execution of test failed with error code " + repr(retcode), test_stdout, test_stderr ) ]
 
-    print "OK"
-      
-    exit(0)
-
+    return [ SaruTestResult( self.testname, True, "OK", test_stdout, test_stderr ) ]
 
 sarupath = SaruPaths(sys.argv[0])
 
@@ -193,6 +190,15 @@ def runSingleTest():
   except SaruBaseError, e:
     print >> sys.stderr, os.path.basename( sys.argv[0] ) +" : " + e.mesg
     exit(1)
+  for t in result:
+    if not t.passed:
+      print >> sys.stderr, t.mesg
+      print >> sys.stderr, t.stderr
+      print >> sys.stderr, t.stdout
+      exit(1)
+    else:
+      print "OK"
+      exit(0)
 
 def runSuiteOfTests():
   if len(sys.argv)!=3:
@@ -215,7 +221,7 @@ def runSuiteOfTests():
     retcode = runProcess.wait()
     if(retcode!=0):
       (runstdout,runstderr) = runProcess.communicate()
-      if(runstdout=="saru-run-test : execution of test failed with error code 1\n"):
+      if(runstderr.strip()=="saru-run-test : execution of test failed with error code 1"):
         print "FAILED"
       else:
         print "FAILED???"
