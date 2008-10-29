@@ -177,6 +177,8 @@ class SingleTestRunner:
     elif(extension==".bash"):
       executablename = os.path.normpath( self.dotsaru+"/bin/"+self.testname )
       shutil.copyfile( self.fulltestname, executablename) 
+    elif(extension==".dummymt"):
+      return [ SaruTestResult( self.testname+"::1", True, "true as dummy", "", "" ), SaruTestResult( self.testname+"::2", False, "false as dummy", "", "" ) ]
     else:
       print >> sys.stderr, "Unknown extension on file "+self.testname
       exit(1)
@@ -211,18 +213,22 @@ def runSingleTest():
     exit(1)
   s = SingleTestRunner( sys.argv[2] )
   result = s.run()
+  runcount = 0
+  passcount = 0
   for t in result:
+    runcount = runcount + 1
     if not t.passed:
       print >> sys.stderr, t.mesg
       if( t.stderr!="" ): 
         print >> sys.stderr, t.stderr
       if( t.stdout!="" ): 
         print >> sys.stderr, t.stdout
-      exit(1)
     else:
       print "OK"
-      exit(0)
-
+      passcount = passcount + 1
+  if runcount==passcount:
+    exit(0)
+  exit(1)
 
 
 def runSuiteOfTests():
