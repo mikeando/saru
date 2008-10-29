@@ -57,6 +57,7 @@ class SingleTestRunner:
   # [ [testname, testpassed, message] x N ] otherwise 
   #  raises SaruBaseError on error
   def run(self):
+    """Actually run the test"""
     if ( os.path.isdir( self.fulltestname ) ):
       raise SaruBaseError( "Doesn't run on a directory yet." )
 
