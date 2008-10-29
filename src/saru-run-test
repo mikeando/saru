@@ -41,6 +41,35 @@ class SingleTestRunner:
       self.testdir="."
     self.dotsaru =  os.path.normpath( self.testdir + "/.saru" )
 
+  def checkValidFile( self ):
+    """Check that the file specified exists, is not a directory, is a recognised format, and is tagged as a saru test"""
+    if ( os.path.isdir( self.fulltestname ) ):
+      raise SaruBaseError( "Doesn't run on a directory yet." )
+
+    if( not os.path.exists( self.fulltestname ) ):
+      raise SaruBaseError( "nonexistant test "+ os.path.basename( self.fulltestname ) )
+
+    isSaruStatus = isSaru( self.fulltestname )
+    if( not isSaruStatus[0] ):
+      if( isSaruStatus[1] == "NO"):
+        raise SaruBaseError( "file does not contain any saru test information" )
+      elif ( isSaruStatus[1] == "UNKNOWN FORMAT"):
+        raise SaruBaseError( "file is of unknown format" )
+      else:
+        raise SaruBaseError( "unknown status code \""+isSaruStatus[1] +"\" from saru-parse issaru" )
+
+  def checkDotSaru( self ):
+    """Make sure the .saru and .saru/bin directories exist. Raise a SaruBaseError if they dont."""
+    if ( not os.path.isdir( self.dotsaru ) ):
+      if( os.path.exists( self.dotsaru ) ):
+        raise SaruBaseError( ".saru object exists but is not directory!" )
+      os.mkdir( self.dotsaru )
+
+    if ( not os.path.isdir( self.dotsaru+"/bin" ) ):
+      if( os.path.exists( self.dotsaru+"/bin" ) ):
+        raise SaruBaseError( ".saru/bin object exists but is not directory!" )
+      os.mkdir( self.dotsaru+"/bin" )
+
   def getSettings( self ):
     """Parses the output of "saru-parse dump" run on the test file an returns it as a dictionary"""
     parseProcess = subprocess.Popen([ sarupath.saruparse, "dump", self.fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -66,35 +95,13 @@ class SingleTestRunner:
   #  raises SaruBaseError on error
   def run(self):
     """Actually run the test"""
-    if ( os.path.isdir( self.fulltestname ) ):
-      raise SaruBaseError( "Doesn't run on a directory yet." )
-
-    if( not os.path.exists( self.fulltestname ) ):
-      raise SaruBaseError( "nonexistant test "+ os.path.basename( self.fulltestname ) )
-
-    isSaruStatus = isSaru( self.fulltestname )
-    if( not isSaruStatus[0] ):
-      if( isSaruStatus[1] == "NO"):
-        raise SaruBaseError( "file does not contain any saru test information" )
-      elif ( isSaruStatus[1] == "UNKNOWN FORMAT"):
-        raise SaruBaseError( "file is of unknown format" )
-      else:
-        raise SaruBaseError( "unknown status code \""+isSaruStatus[1] +"\" from saru-parse issaru" )
+    self.checkValidFile()
+    self.checkDotSaru()
 
     try:
       filesettings = self.getSettings()
     except SaruBaseError, e:
       raise SaruBaseError( e.mesg )
-
-    if ( not os.path.isdir( self.dotsaru ) ):
-      if( os.path.exists( self.dotsaru ) ):
-        raise SaruBaseError( ".saru object exists but is not directory!" )
-      os.mkdir( self.dotsaru )
-
-    if ( not os.path.isdir( self.dotsaru+"/bin" ) ):
-      if( os.path.exists( self.dotsaru+"/bin" ) ):
-        raise SaruBaseError( ".saru/bin object exists but is not directory!" )
-      os.mkdir( self.dotsaru+"/bin" )
 
     extension = os.path.splitext(self.testname)[1]
     if(extension==".cpp"):
@@ -150,7 +157,6 @@ class SingleTestRunner:
     testProcess = subprocess.Popen([ executablename ], stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
     retcode=testProcess.wait()
 
-  #TODO: Why is this printing to stdout rather than stderr
     test_stdout, test_stderr = testProcess.communicate()
     if(retcode!=0):
       return [ SaruTestResult( self.testname, False, "saru-run-test : execution of test failed with error code " + repr(retcode), test_stdout, test_stderr ) ]
