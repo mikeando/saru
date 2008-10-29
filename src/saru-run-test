@@ -14,6 +14,40 @@ class SaruBaseError(Exception):
   def __init__( self, mesg ):
     self.mesg = mesg
 
+# saru-parse issaru xxxx .. what does it return?
+# General failure retcode = 1
+# Unsupported format retcode = 0, stdout = "UNKNOWN FORMAT"
+# supported format without saru info retcode = 0, stdout="NO"
+# supported format with saru info retcode = 0, stdout="YES"
+#
+def isSaru(fulltestname):
+  checkProcess = subprocess.Popen([ sarupath.saruparse, "issaru", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  retcode = checkProcess.wait()
+  if(retcode!=0):
+    print "saru-run-test : saru-parse issaru check died with error code " + repr(retcode)
+    print checkProcess.communicate()[1]
+    exit(1)
+  retcode = checkProcess.communicate()[0].splitlines()[0] 
+  return ( (( retcode != "NO" ) and ( retcode != "UNKNOWN FORMAT")), retcode )
+
+def checkValidFile( fulltestname ):
+  """Check that the file specified exists, is not a directory, is a recognised format, and is tagged as a saru test"""
+  if ( os.path.isdir( fulltestname ) ):
+    raise SaruBaseError( "Doesn't run on a directory yet." )
+
+  if( not os.path.exists( fulltestname ) ):
+    raise SaruBaseError( "nonexistant test "+ os.path.basename( fulltestname ) )
+
+  isSaruStatus = isSaru( fulltestname )
+  if( not isSaruStatus[0] ):
+    if( isSaruStatus[1] == "NO"):
+      raise SaruBaseError( "file does not contain any saru test information" )
+    elif ( isSaruStatus[1] == "UNKNOWN FORMAT"):
+      raise SaruBaseError( "file is of unknown format" )
+    else:
+      raise SaruBaseError( "unknown status code \""+isSaruStatus[1] +"\" from saru-parse issaru" )
+
+
 class SaruTestResult:
   """Whether a test passes or fails and any other available information"""
   def __init__(self, testname, passed, mesg, stdout, stderr):
@@ -32,6 +66,7 @@ class SaruPaths:
     self.saruruntest = os.path.normpath( self.sarubinpath + "/saru-run-test" )
     self.sarusearch = os.path.normpath( self.sarubinpath + "/saru-search" )
 
+
 class SingleTestRunner:
   """Runs a single test"""
   def __init__(self, fulltestname ):
@@ -41,22 +76,6 @@ class SingleTestRunner:
       self.testdir="."
     self.dotsaru =  os.path.normpath( self.testdir + "/.saru" )
 
-  def checkValidFile( self ):
-    """Check that the file specified exists, is not a directory, is a recognised format, and is tagged as a saru test"""
-    if ( os.path.isdir( self.fulltestname ) ):
-      raise SaruBaseError( "Doesn't run on a directory yet." )
-
-    if( not os.path.exists( self.fulltestname ) ):
-      raise SaruBaseError( "nonexistant test "+ os.path.basename( self.fulltestname ) )
-
-    isSaruStatus = isSaru( self.fulltestname )
-    if( not isSaruStatus[0] ):
-      if( isSaruStatus[1] == "NO"):
-        raise SaruBaseError( "file does not contain any saru test information" )
-      elif ( isSaruStatus[1] == "UNKNOWN FORMAT"):
-        raise SaruBaseError( "file is of unknown format" )
-      else:
-        raise SaruBaseError( "unknown status code \""+isSaruStatus[1] +"\" from saru-parse issaru" )
 
   def checkDotSaru( self ):
     """Make sure the .saru and .saru/bin directories exist. Raise a SaruBaseError if they dont."""
@@ -95,7 +114,7 @@ class SingleTestRunner:
   #  raises SaruBaseError on error
   def run(self):
     """Actually run the test"""
-    self.checkValidFile()
+    checkValidFile( self.fulltestname )
     self.checkDotSaru()
 
     try:
@@ -170,21 +189,6 @@ def printUsage():
   print "USAGE: saru-run-test suite <dirname>"
   print "USAGE: saru-run-test tag <tagname> <dirname>"
 
-# saru-parse issaru xxxx .. what does it return?
-# General failure retcode = 1
-# Unsupported format retcode = 0, stdout = "UNKNOWN FORMAT"
-# supported format without saru info retcode = 0, stdout="NO"
-# supported format with saru info retcode = 0, stdout="YES"
-#
-def isSaru(fulltestname):
-  checkProcess = subprocess.Popen([ sarupath.saruparse, "issaru", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  retcode = checkProcess.wait()
-  if(retcode!=0):
-    print "saru-run-test : saru-parse issaru check died with error code " + repr(retcode)
-    print checkProcess.communicate()[1]
-    exit(1)
-  retcode = checkProcess.communicate()[0].splitlines()[0] 
-  return ( (( retcode != "NO" ) and ( retcode != "UNKNOWN FORMAT")), retcode )
 
 def runSingleTest():
   if ( len(sys.argv) != 3 ):
