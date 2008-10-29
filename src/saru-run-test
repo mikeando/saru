@@ -126,7 +126,7 @@ class SingleTestRunner:
   def run(self):
     """Actually run the test"""
     checkValidFile( self.fulltestname )
-    self.checkDotSaru()
+    checkDotSaru( self.dotsaru )
     try:
       filesettings = getSettings(self.fulltestname)
     except SaruBaseError, e:
@@ -348,5 +348,5 @@ elif (sys.argv[1] == "tag" ):
 
 print >> sys.stderr,"saru-run-test : Unknown mode "+sys.argv[1]
 printUsage()
-exit(1) `:w
+exit(1)
 
