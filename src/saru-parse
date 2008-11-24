@@ -61,8 +61,25 @@ def parseCXXFile( infile ):
     break
   return settings
 
+# Get a list of  all the SARU tags in a saruconf file
+def parseSaruconfFile( infile ):
+  pattern_directive = re.compile(r"^\s*(\S+)(.*)$")
+  pattern_empty = re.compile(r"^\s*$")
+  settings={}
 
-
+  for line in infile:
+    if( pattern_empty.search(line) ) :
+      continue
+    match = pattern_directive.search(line); 
+    if ( match ):
+      key = match.group(1)
+      value = match.group(2)
+      if settings.has_key(key):
+        settings[key].append(value.strip())
+      else:
+        settings[key]=[ value.strip() ]
+      continue
+  return settings
 
 # Get a list of  all the SARU tags in a bash test file
 def parseBashFile( infile ):
@@ -119,6 +136,16 @@ def doSaruParseDump():
     print >> sys.stderr, "saru-parse : Unsuported file format for file "+testname
     exit(1)
 
+
+  #Is there a saruconf file at the same location
+  saruconfpath = os.path.join( testdir, "saruconf" );
+  saruconfsettings = {}
+  try:
+    saruconffile = open(saruconfpath,"r")
+    saruconfsettings = parseSaruconfFile(saruconffile)
+  except IOError:
+    pass
+
   try:
     infile = open(fulltestname, "r")
   except IOError:
@@ -130,6 +157,10 @@ def doSaruParseDump():
   if ( settings=={} ):
     print >> sys.stderr, "saru-parse: No settings in file"
     exit(1)
+
+  for k,v in saruconfsettings.iteritems():
+     for vv in v:
+       print k+" : "+vv
   for k,v in settings.iteritems():
      for vv in v:
        print k+" : "+vv

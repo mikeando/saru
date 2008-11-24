@@ -7,7 +7,7 @@ def isSystemRoot( path ):
   return ( os.path.abspath( os.path.normpath( path ) ) == "/" )
 
 def isSaruRoot( path ):
-  saruconf = os.path.normpath( path + "/saruconf" ) 
+  saruconf = os.path.normpath( path + "/saruconf" )
   if (not os.path.exists( saruconf ) ):
     return False
   try:

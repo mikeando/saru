@@ -65,6 +65,7 @@ class TestLogger
 {
 public:
   TestLogger() : runCount(0), passedCount(0) {}
+  virtual ~TestLogger() {}
 
   virtual void registerTestPassed( const std::string & testname )
   {
