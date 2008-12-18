@@ -5,7 +5,7 @@ import subprocess
 import os
 
 
-searchProc = subprocess.Popen( [ "../src/saru-search", "tag", "testtag", "../fakeproject" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+searchProc = subprocess.Popen( [ "../src/saru-search", "tag", "testtag", "fakeproject" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 retcode = searchProc.wait()
 
 
@@ -19,9 +19,9 @@ if( retcode != 0 ) :
 
 
 expectedstdout="\
-../fakeproject/testtag01.cpp\n\
-../fakeproject/testtag02.bash\n\
-../fakeproject/testtag03.py\n\
+fakeproject/testtag01.cpp\n\
+fakeproject/testtag02.bash\n\
+fakeproject/testtag03.py\n\
 "
 
 if ( procstdout != expectedstdout ):

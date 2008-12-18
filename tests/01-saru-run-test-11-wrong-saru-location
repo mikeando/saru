@@ -18,25 +18,25 @@ if( os.path.isdir("/.saru") ):
   exit(1)
 
 # Blow away any preexisting .saru directory.
-if (os.path.isdir("../fakeproject/.saru") ):
-  shutil.rmtree("../fakeproject/.saru")
-if (os.path.isdir("../fakeproject/.saru") ):
+if (os.path.isdir("fakeproject/.saru") ):
+  shutil.rmtree("fakeproject/.saru")
+if (os.path.isdir("fakeproject/.saru") ):
   print >> sys.stderr, "Unable to remove ../fakeprojet/.saru\n"
   exit(1)
 
 # CD to the right place and run the tests.
 origdir = os.getcwd()
-os.chdir("../fakeproject")
+os.chdir("fakeproject")
 
-runProc = subprocess.Popen( [ "../src/saru-run-test","suite", "." ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+runProc = subprocess.Popen( [ "../../src/saru-run-test","suite", "." ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 retcode = runProc.wait()
 
 # CD back to where we came from
 os.chdir(origdir)
 
 # Check that we created the right directory
-if ( not os.path.isdir("../fakeproject/.saru") ):
-  print >> sys.stderr, "Did not create expected ../fakeproject/.saru directory\n"
+if ( not os.path.isdir("fakeproject/.saru") ):
+  print >> sys.stderr, "Did not create expected fakeproject/.saru directory\n"
   exit(1)
 
 # Check that we didn't create the wrong directory

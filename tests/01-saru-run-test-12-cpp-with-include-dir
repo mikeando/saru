@@ -12,17 +12,17 @@ import shutil
 
 
 # Blow away any preexisting .saru directory.
-if (os.path.isdir("../fakeproject/.saru") ):
-  shutil.rmtree("../fakeproject/.saru")
-if (os.path.isdir("../fakeproject/.saru") ):
-  print >> sys.stderr, "Unable to remove ../fakeprojet/.saru\n"
+if (os.path.isdir("fakeproject/.saru") ):
+  shutil.rmtree("fakeproject/.saru")
+if (os.path.isdir("fakeproject/.saru") ):
+  print >> sys.stderr, "Unable to remove fakeprojet/.saru\n"
   exit(1)
 
 # CD to the right place and run the tests.
 origdir = os.getcwd()
-os.chdir("../fakeproject")
+os.chdir("fakeproject")
 
-runProc = subprocess.Popen( [ "../src/saru-run-test","single", "needsinclude.cpp" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+runProc = subprocess.Popen( [ "../../src/saru-run-test","single", "needsinclude.cpp" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 (procstdout, procstderr) = runProc.communicate()
 
 os.chdir(origdir)

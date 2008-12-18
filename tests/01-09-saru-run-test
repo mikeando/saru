@@ -5,11 +5,11 @@ import subprocess
 import os
 
 
-runProc = subprocess.Popen( [ "../src/saru-run-test","tag", "testtag", "../fakeproject/" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+runProc = subprocess.Popen( [ "../src/saru-run-test","tag", "testtag", "fakeproject/" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 retcode = runProc.wait()
 
 if( retcode != 0 ) :
-  print >> sys.stderr, "returned non-zeor exit code"
+  print >> sys.stderr, "returned non-zero exit code"
   (procstdout, procstderr) = runProc.communicate()
   print >> sys.stderr, procstderr
   print >> sys.stderr, procstdout

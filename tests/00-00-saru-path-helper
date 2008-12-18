@@ -5,7 +5,7 @@ import subprocess
 import os
 
 
-pathProc = subprocess.Popen( [ "../src/saru-path-helper", "find-root", "../fakeproject" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+pathProc = subprocess.Popen( [ "../src/saru-path-helper", "find-root", "fakeproject" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 retcode = pathProc.wait()
 
 if( retcode != 0 ) :
@@ -25,7 +25,7 @@ if ( len(lines)!= 1 ):
   print >> sys.stderr, "Wrong number of stdout lines"
   print >> sys.stderr, procstdout
   exit(1)
-if ( lines[0] != "/Users/michaelanderson/Code/git/saru/fakeproject"):
+if ( lines[0] != os.path.abspath("fakeproject") ):
   print >> sys.stderr, "Line of stdout not as expected"
   print >> sys.stderr, procstdout
   exit(1)
