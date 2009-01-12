@@ -195,13 +195,18 @@ class SingleTestRunner:
       if(retcode!=0):
         make_stdout, make_stderr = makeProcess.communicate()
         return [ SaruTestResult( self.testname, False, "saru-run-test : make failed with error code " + repr(retcode), make_stdout, make_stderr ) ]
-      executablename = os.path.normpath(self.dotsaru+"/bin/"+self.testname+".test")
+      executable = [ os.path.normpath(self.dotsaru+"/bin/"+self.testname+".test") ]
     elif(extension==".py"):
-      executablename = os.path.normpath( self.dotsaru+"/bin/"+self.testname )
-      shutil.copyfile( self.fulltestname, executablename) 
+      executable = [ os.path.normpath( self.dotsaru+"/bin/"+self.testname ) ]
+      shutil.copyfile( self.fulltestname, executable[0]) 
+      os.chmod( executable[0], S_IREAD | S_IWUSR | S_IXUSR )
+    elif(extension==".php"):
+      executable = [ "php", os.path.normpath( self.dotsaru+"/bin/"+self.testname ) ]
+      shutil.copyfile( self.fulltestname, executable[1]) 
     elif(extension==".bash"):
-      executablename = os.path.normpath( self.dotsaru+"/bin/"+self.testname )
-      shutil.copyfile( self.fulltestname, executablename) 
+      executable = [ os.path.normpath( self.dotsaru+"/bin/"+self.testname ) ]
+      shutil.copyfile( self.fulltestname, executable[0]) 
+      os.chmod( executable[0], S_IREAD | S_IWUSR | S_IXUSR )
     elif(extension==".dummymt"):
       return [ SaruTestResult( self.testname+"::1", True, "true as dummy", "", "" ), SaruTestResult( self.testname+"::2", False, "false as dummy", "", "" ) ]
     else:
@@ -209,8 +214,7 @@ class SingleTestRunner:
       exit(1)
 
     # Lets try running it...
-    os.chmod( executablename, S_IREAD | S_IWUSR | S_IXUSR )
-    testProcess = subprocess.Popen([ executablename ], stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
+    testProcess = subprocess.Popen( executable, stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
     retcode=testProcess.wait()
 
     test_stdout, test_stderr = testProcess.communicate()

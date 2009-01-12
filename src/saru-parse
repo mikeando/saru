@@ -86,6 +86,33 @@ def parseCXXFile( infile ):
     break
   return settings
 
+# Get a list of  all the SARU tags in a PHP test file
+def parsePHPFile( infile ):
+  pattern_directive = re.compile(r"^\s*//\s*SARU\s*:\s*(\S+)(.*)$")
+  pattern_comment = re.compile(r"^\s*//")
+  pattern_empty = re.compile(r"^\s*$")
+  pattern_ignore = re.compile(r"^\s*<\?php\s*$")
+  settings={}
+
+  for line in infile:
+    if( pattern_empty.search(line) ) :
+      continue
+    if( pattern_ignore.search(line) ) :
+      continue
+    match = pattern_directive.search(line); 
+    if ( match ):
+      key = match.group(1)
+      value = match.group(2)
+      if settings.has_key(key):
+        settings[key].append(value.strip())
+      else:
+        settings[key]=[ value.strip() ]
+      continue
+    if ( pattern_comment.search(line) ):
+      continue
+    break
+  return settings
+
 # Get a list of  all the SARU tags in a saruconf file
 def parseSaruconfFile( infile ):
   pattern_directive = re.compile(r"^\s*(\S+)(.*)$")
@@ -135,7 +162,7 @@ def parseDummyMulti( infile ):
   return { "moo":"foo" }
 
 
-knownFileTypes = { ".cpp":parseCXXFile, ".bash":parseBashFile, ".py":parsePythonFile, ".dummymt":parseDummyMulti }
+knownFileTypes = { ".cpp":parseCXXFile, ".bash":parseBashFile, ".py":parsePythonFile, ".dummymt":parseDummyMulti, ".php":parsePHPFile }
 
 def printUsage():
   print >> sys.stderr, "USAGE: saru-parse dump file"

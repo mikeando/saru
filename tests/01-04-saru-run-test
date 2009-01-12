@@ -49,10 +49,12 @@ false as dummy\n\
 \n\
 needsinclude.cpp : OK\n\
 passingtest.bash : OK\n\
+testphpfail.php : FAILED\n\
+testphppass.php : OK\n\
 testtag01.cpp : OK\n\
 testtag02.bash : OK\n\
 testtag03.py : OK\n\
-6 / 11\n\
+7 / 13\n\
 "
 
 
