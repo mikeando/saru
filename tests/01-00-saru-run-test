@@ -25,8 +25,8 @@ if ( len(lines)!= 1 ):
   print >> sys.stderr, "Wrong number of stdout lines"
   print >> sys.stderr, procstdout
   exit(1)
-if ( lines[0] != "OK"):
-  print >> sys.stderr, "Line of stdout not \"OK\""
+if ( lines[0] != "passingtest.bash : OK"):
+  print >> sys.stderr, "Line of stdout not \"passingtest.bash: OK\""
   print >> sys.stderr, procstdout
   exit(1)
 exit(0)

@@ -122,6 +122,7 @@ public:
 
 void do_test( void(*fn)(), const std::string & testname, TestLogger & logger )
 {
+  std::cerr<<"<@saru start "+testname+" @>"<<std::endl;
   try
   {
     (*fn)();
@@ -131,6 +132,7 @@ void do_test( void(*fn)(), const std::string & testname, TestLogger & logger )
   {
      logger.registerTestFailed( testname, err );
   }
+  std::cerr<<"<@saru end "+testname+" @>"<<std::endl;
 }
 
 }

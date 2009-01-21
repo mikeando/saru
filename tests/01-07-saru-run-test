@@ -17,19 +17,26 @@ if( retcode != 0 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-lines = procstderr.splitlines()
-if ( len(lines)!= 0 ):
-  print >> sys.stderr, "Non-empty stderr"
-  print >> sys.stderr, procstderr
-  exit(1)
+expectedOutput="testtag03.py : OK\n"
+expectedError=""
 
-lines = procstdout.splitlines()
-if ( len(lines)!= 1 ):
-  print >> sys.stderr, "Wrong number of stdout lines"
+OK=True
+if ( procstdout!= expectedOutput ):
+  print >> sys.stderr, "output not as expected"
+  print >> sys.stderr, "EXPECTED:"
+  print >> sys.stderr, expectedOutput
+  print >> sys.stderr, "ACTUAL:"
   print >> sys.stderr, procstdout
-  exit(1)
-if ( lines[0] != "OK"):
-  print >> sys.stderr, "Line of stdout not \"OK\""
-  print >> sys.stderr, procstdout
+  OK=False
+
+if ( procstderr!= expectedError ):
+  print >> sys.stderr, "stderr not as expected"
+  print >> sys.stderr, "EXPECTED:"
+  print >> sys.stderr, expectedError
+  print >> sys.stderr, "ACTUAL:"
+  print >> sys.stderr, procstderr
+  OK=False
+
+if not OK:
   exit(1)
 exit(0)

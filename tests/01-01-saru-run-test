@@ -14,20 +14,26 @@ if( retcode != 1 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-lines = procstdout.splitlines()
-if ( len(lines)!= 0 ):
-  print >> sys.stdout, "Non-empty stdout"
-  print >> sys.stdout, procstdout
-  exit(1)
+expectedOutput="failingtest.bash : FAILED\n"
+expectedError="saru-run-test : execution of test failed with error code 1\n"
 
-lines = procstderr.splitlines()
-if ( len(lines)!= 1 ):
-  print >> sys.stderr, "Wrong number of stderr lines ("+str(len(lines)) + " instead of 1 )"
+OK=True
+if ( procstdout!= expectedOutput ):
+  print >> sys.stderr, "output not as expected"
+  print >> sys.stderr, "EXPECTED:"
+  print >> sys.stderr, expectedOutput
+  print >> sys.stderr, "ACTUAL:"
+  print >> sys.stderr, procstdout
+  OK=False
+
+if ( procstderr!= expectedError ):
+  print >> sys.stderr, "stderr not as expected"
+  print >> sys.stderr, "EXPECTED:"
+  print >> sys.stderr, expectedError
+  print >> sys.stderr, "ACTUAL:"
   print >> sys.stderr, procstderr
-  exit(1)
-if ( lines[0] != "saru-run-test : execution of test failed with error code 1"):
-  print >> sys.stderr, "Line of stderr not as sexpected"
-  print >> sys.stderr, procstderr
+  OK=False
+
+if not OK:
   exit(1)
 exit(0)
-

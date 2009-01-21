@@ -27,7 +27,7 @@ runProc = subprocess.Popen( [ "../../src/saru-run-test","single", "testphpfail.p
 
 os.chdir(origdir)
 
-expectedOutput=""
+expectedOutput="testphpfail.php : FAILED\n"
 expectedErr="saru-run-test : execution of test failed with error code 1\n"
 
 if ( runProc.returncode!=1 ):

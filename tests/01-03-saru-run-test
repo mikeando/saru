@@ -17,15 +17,17 @@ if( retcode != 1 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-expectedOutput=""
+expectedOutput="nonsaru.bash : FAILED\n"
 expectedError="saru-run-test : file does not contain any saru test information\n"
+
+OK=True
 if ( procstdout!= expectedOutput ):
   print >> sys.stderr, "output not as expected"
   print >> sys.stderr, "EXPECTED:"
   print >> sys.stderr, expectedOutput
   print >> sys.stderr, "ACTUAL:"
   print >> sys.stderr, procstdout
-  exit(1)
+  OK=False
 
 if ( procstderr!= expectedError ):
   print >> sys.stderr, "stderr not as expected"
@@ -33,7 +35,8 @@ if ( procstderr!= expectedError ):
   print >> sys.stderr, expectedError
   print >> sys.stderr, "ACTUAL:"
   print >> sys.stderr, procstderr
+  OK=False
+
+if not OK:
   exit(1)
-
-
 exit(0)

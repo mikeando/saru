@@ -27,7 +27,7 @@ runProc = subprocess.Popen( [ "../../src/saru-run-test","single", "testphppass.p
 
 os.chdir(origdir)
 
-expectedOutput="OK\n"
+expectedOutput="testphppass.php : OK\n"
 expectedErr=""
 
 if ( runProc.returncode!=0 ):

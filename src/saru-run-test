@@ -113,6 +113,39 @@ def getSettings( fulltestname ):
   return filesettings
 
 
+# A utililty function designed to read the output of a single test that supports multiple results.
+# The output  should look something like
+#  <@saru start test_replace_with_null @>
+#  <@saru end test_replace_with_null @>
+#  <@saru start test_event_mask @>
+#      In function test_event_mask
+#  scratch.cpp:250: saru_assert failed. : false
+#  <@saru end test_event_mask @>
+#And the result of parseSaruLogText should be {'test_replace+with_null':'', 'test_event_mask':'   In function ....' }
+
+def parseSaruLogText( input ):
+  results = {}
+  matchSaruLogStart = re.compile(r'^\s*<@saru\s+(\w+)\s+(\w+)\s+@>\s*$');
+
+  curkey="@before";
+  for l in input.splitlines():
+    m =matchSaruLogStart.search(l) 
+    if m:
+      saruLogAction = m.group(1)
+      saruLogTarget = m.group(2)
+      if ( saruLogAction=="start" ) and ( curkey=="@before" or curkey=="@between" ) :
+        curkey=saruLogTarget
+        results[curkey]=""
+      if ( saruLogAction=="end" ):
+        curkey="@between"
+      continue;
+    if curkey in results:
+      results[curkey]+=l+"\n";
+    else:
+      results[curkey]=l+"\n";
+  return results
+
+
 class SaruTestResult:
   """Whether a test passes or fails and any other available information"""
   def __init__(self, testname, passed, mesg, stdout, stderr):
@@ -192,6 +225,7 @@ class SingleTestRunner:
       makeProcess = subprocess.Popen(["/usr/bin/make", "-C", self.testdir, "--file", ".saru/"+self.testname+".make"], stdout=subprocess.PIPE, stderr=subprocess.PIPE  )
       retcode=makeProcess.wait()
 
+
       if(retcode!=0):
         make_stdout, make_stderr = makeProcess.communicate()
         return [ SaruTestResult( self.testname, False, "saru-run-test : make failed with error code " + repr(retcode), make_stdout, make_stderr ) ]
@@ -218,6 +252,50 @@ class SingleTestRunner:
     retcode=testProcess.wait()
 
     test_stdout, test_stderr = testProcess.communicate()
+
+#if test_stdlout looks like this then we can return all the tests.
+#test_basics : OK
+#test_alt : OK
+#test_double_same : OK
+#test_null : OK
+#test_replace_with_null : OK
+#test_event_mask : FAILED
+#5 / 6
+
+    #Lets try chunking up the stdout into "<@saru start ... @> to <@saru end ... @> blocks
+    stderrchunks = parseSaruLogText( test_stderr );
+
+    retval = [];
+    matchOK = re.compile(r'^\s*(\w+)\s*:\s*OK\s*$')
+    matchFAILED = re.compile(r'^\s*(\w+)\s*:\s*FAILED\s*$')
+    matchResult = re.compile(r'^(\d+)\s*/\s*(\d+)\s*$')
+    matchEmpty = re.compile(r'^\s*$')
+    nPassed = 0
+    nFailed = 0
+
+    for l in test_stdout.splitlines():
+      match = matchOK.search( l );
+      if(match):
+        retval.append( SaruTestResult( self.testname+"::"+match.group(1), True, "", "", stderrchunks[match.group(1)]) )
+        nPassed = nPassed+1;
+        continue
+      match = matchFAILED.search( l );
+      if(match):
+        retval.append( SaruTestResult( self.testname+"::"+match.group(1), False, "", "", stderrchunks[match.group(1)]) )
+        nFailed = nFailed+1;
+        continue
+      match = matchResult.search( l );
+      if(match):
+        if (nPassed==int(match.group(1))) and ((nPassed+nFailed)==int(match.group(2))) :
+          return retval;
+        return [ SaruTestResult( self.testname, False, "saru-run-test : Incorrect reporting on pass / fail count.\n"+match.group(1)+" / " +match.group(2)+" vs "+str(nPassed)+" / " +str(nPassed+nFailed), test_stdout, test_stderr ) ]
+      match = matchEmpty.search( l );
+      if(match):
+        continue
+      #Unexpected line .. output not in the nice multitest-saru format .. so break and fall back on old method.
+      break
+
+        
     if(retcode!=0):
       return [ SaruTestResult( self.testname, False, "saru-run-test : execution of test failed with error code " + repr(retcode), test_stdout, test_stderr ) ]
 
@@ -247,13 +325,14 @@ def runSingleTest():
   for t in result:
     runcount = runcount + 1
     if not t.passed:
+      print t.testname + " : FAILED"
       print >> sys.stderr, t.mesg
       if( t.stderr!="" ): 
         print >> sys.stderr, t.stderr
       if( t.stdout!="" ): 
         print >> sys.stderr, t.stdout
     else:
-      print "OK"
+      print t.testname + " : OK"
       passcount = passcount + 1
   if runcount==passcount:
     exit(0)

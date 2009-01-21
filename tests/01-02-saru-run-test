@@ -17,7 +17,7 @@ if( retcode != 1 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-expectedOutput=""
+expectedOutput="nonexistanttest.bash : FAILED\n"
 expectedError="saru-run-test : nonexistant test nonexistanttest.bash\n"
 
 OK=True
