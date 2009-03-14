@@ -384,7 +384,7 @@ def runSuiteOfTests():
   except IOError:
     print "Unable to write results to log file"
 
-  if( passcount == len(filelist) ):
+  if( passcount == runcount ):
     exit(0)
   exit(1)
 
