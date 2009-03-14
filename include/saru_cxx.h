@@ -60,6 +60,17 @@ public:
   }
 };
 
+class TestError : public TestFailed
+{
+public:
+  TestError( const std::string & mesg, int lineNumber, const char * const filename ) : TestFailed(lineNumber, filename)
+  {
+    std::stringstream ss;
+    ss<<filename<<":"<<lineNumber<<": saru_error : "<<mesg;
+    setMessage(ss.str());
+  }
+};
+
 template<typename X, typename Y>
 class TestEqualityFailed : public TestFailed
 {
@@ -87,6 +98,11 @@ void assert_template( bool v, const char * testmesg, int lineNumber, const char 
 {
   if( v ) return;
   throw TestAssertFailed(testmesg,lineNumber,filename);
+}
+
+void error( const std::string & mesg, int lineNumber, const char * filename )
+{
+  throw TestError(mesg, lineNumber, filename );
 }
 
 class TestLogger
@@ -147,6 +163,12 @@ do { \
 saru::assert_equal_template(x,y,__LINE__,__FILE__); \
 } while(false)
 
+#define saru_error(m) \
+do { \
+saru::error(m, __LINE__, __FILE__); \
+} while(false)
+
 #define SARU_TEST( test, logger ) saru::do_test(test,#test,logger) 
+
 
 #endif
