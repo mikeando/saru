@@ -82,8 +82,8 @@ public:
     setMessage(ss.str());
   }
 
-  X x_;
-  Y y_;
+  const X & x_;
+  const Y & y_;
 };
 
 
