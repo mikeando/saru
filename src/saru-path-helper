@@ -39,7 +39,7 @@ def isSaruRoot( path ):
   try:
     infile = open(saruconf, "r")
   except IOError:
-    print >> sys.stderr, "saru-pathe-helper: Unable to open "+ saruconf
+    print >> sys.stderr, "saru-path-helper: Unable to open "+ saruconf
     exit(1)
   root_pattern = re.compile(r"^\s*is-saru-root\s*=\s*true\s*$")
   for line in infile:
@@ -72,7 +72,7 @@ if( sys.argv[1] == "find-root" ):
     exit(0)
   exit(1)
 else:
-  print >> sys.stderr, "sarue-path-helper : Unknown mode "+sys.argv[1]
+  print >> sys.stderr, "saru-path-helper : Unknown mode "+sys.argv[1]
   print >> sys.stderr, "known modes are :"
   print >> sys.stderr, "  find-root"
   exit(1)
