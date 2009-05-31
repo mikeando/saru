@@ -125,7 +125,7 @@ def getSettings( fulltestname ):
 
 def parseSaruLogText( input ):
   results = {}
-  matchSaruLogStart = re.compile(r'^\s*<@saru\s+(\w+)\s+(\w+)\s+@>\s*$');
+  matchSaruLogStart = re.compile(r'^\s*<@saru\s+(\w+)\s+([a-zA-Z0-9_:]+)\s+@>\s*$');
 
   curkey="@before";
   for l in input.splitlines():
@@ -266,8 +266,8 @@ class SingleTestRunner:
     stderrchunks = parseSaruLogText( test_stderr );
 
     retval = [];
-    matchOK = re.compile(r'^\s*(\w+)\s*:\s*OK\s*$')
-    matchFAILED = re.compile(r'^\s*(\w+)\s*:\s*FAILED\s*$')
+    matchOK = re.compile(r'^\s*([a-zA-Z0-9_:]+)\s*:\s*OK\s*$')
+    matchFAILED = re.compile(r'^\s*([a-zA-Z0-9_:]+)\s*:\s*FAILED\s*$')
     matchResult = re.compile(r'^(\d+)\s*/\s*(\d+)\s*$')
     matchEmpty = re.compile(r'^\s*$')
     nPassed = 0
