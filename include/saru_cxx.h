@@ -151,6 +151,23 @@ void do_test( void(*fn)(), const std::string & testname, TestLogger & logger )
   std::cerr<<"<@saru end "+testname+" @>"<<std::endl;
 }
 
+template< typename T>
+void do_test( void(T::*fn)(), const std::string & testname, TestLogger & logger )
+{
+  std::cerr<<"<@saru start "+testname+" @>"<<std::endl;
+  try
+  {
+    T t;
+    (t.*fn)();
+    logger.registerTestPassed( testname );
+  }
+  catch( TestFailed & err )
+  {
+     logger.registerTestFailed( testname, err );
+  }
+  std::cerr<<"<@saru end "+testname+" @>"<<std::endl;
+}
+
 }
 
 #define saru_assert(x) \
@@ -168,7 +185,7 @@ do { \
 saru::error(m, __LINE__, __FILE__); \
 } while(false)
 
-#define SARU_TEST( test, logger ) saru::do_test(test,#test,logger) 
+#define SARU_TEST( test, logger ) saru::do_test(&test,#test,logger)
 
 
 #endif
