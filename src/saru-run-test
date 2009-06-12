@@ -50,13 +50,14 @@ class SaruBaseError(Exception):
 # supported format with saru info retcode = 0, stdout="YES"
 #
 def isSaru(fulltestname):
-  checkProcess = subprocess.Popen([ sarupath.saruparse, "issaru", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  retcode = checkProcess.wait()
+  checkProcess = subprocess.Popen([ sarupath.saruparse, "issaru", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+  (pstdout,pstderr) = checkProcess.communicate()
+  retcode = checkProcess.returncode
   if(retcode!=0):
     print "saru-run-test : saru-parse issaru check died with error code " + repr(retcode)
-    print checkProcess.communicate()[1]
+    print pstderr
     exit(1)
-  retcode = checkProcess.communicate()[0].splitlines()[0] 
+  retcode = pstdout.splitlines()[0] 
   return ( (( retcode != "NO" ) and ( retcode != "UNKNOWN FORMAT")), retcode )
 
 
@@ -94,12 +95,13 @@ def checkDotSaru( dotsarupath ):
 
 def getSettings( fulltestname ):
   """Parses the output of "saru-parse dump" run on the test file an returns it as a dictionary"""
-  parseProcess = subprocess.Popen([ sarupath.saruparse, "dump", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  retcode = parseProcess.wait()
+  parseProcess = subprocess.Popen([ sarupath.saruparse, "dump", fulltestname], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+  (pstdout,pstderr) = parseProcess.communicate()
+  retcode = parseProcess.returncode
   if(retcode!=0):
-    raise SaruBaseError( "saru-parse failed with error code " + repr(retcode) + "\n" +  parseProcess.communicate()[1] )
+    raise SaruBaseError( "saru-parse failed with error code " + repr(retcode) + "\n" +  pstderr )
 
-  settings = parseProcess.communicate()[0]
+  settings = pstdout
   filesettings = {};
   for confline in settings.splitlines():
     kv = confline.split( ":", 1)
@@ -222,12 +224,11 @@ class SingleTestRunner:
       
       # Lets try making it...
       # TODO Make these use the settings taht got read in from the saru-parse stage
-      makeProcess = subprocess.Popen(["/usr/bin/make", "-C", self.testdir, "--file", ".saru/"+self.testname+".make"], stdout=subprocess.PIPE, stderr=subprocess.PIPE  )
-      retcode=makeProcess.wait()
-
+      makeProcess = subprocess.Popen(["/usr/bin/make", "-C", self.testdir, "--file", ".saru/"+self.testname+".make"], stdout=subprocess.PIPE, stderr=subprocess.PIPE  , close_fds=True)
+      (make_stdout,make_stderr) = makeProcess.communicate()
+      retcode=makeProcess.returncode
 
       if(retcode!=0):
-        make_stdout, make_stderr = makeProcess.communicate()
         return [ SaruTestResult( self.testname, False, "saru-run-test : make failed with error code " + repr(retcode), make_stdout, make_stderr ) ]
       executable = [ os.path.normpath(self.dotsaru+"/bin/"+self.testname+".test") ]
     elif(extension==".py"):
@@ -248,10 +249,10 @@ class SingleTestRunner:
       exit(1)
 
     # Lets try running it...
-    testProcess = subprocess.Popen( executable, stdout=subprocess.PIPE, stderr=subprocess.PIPE ) 
-    retcode=testProcess.wait()
+    testProcess = subprocess.Popen( executable, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True ) 
 
     test_stdout, test_stderr = testProcess.communicate()
+    retcode=testProcess.returncode
 
 #if test_stdlout looks like this then we can return all the tests.
 #test_basics : OK
@@ -397,9 +398,9 @@ def runTaggedTests():
     print >> sys.stderr, os.path.basename( sys.argv[0] )+" : requires a directory name."
     exit(1)
 
-  tagProcess = subprocess.Popen( [ sarupath.sarusearch, "tag", tagname, tagpath ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  retcode = tagProcess.wait()
+  tagProcess = subprocess.Popen( [ sarupath.sarusearch, "tag", tagname, tagpath ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
   (tagstdout,tagstderr) = tagProcess.communicate()
+  retcode = tagProcess.returncode
   if(retcode!=0):
     print "saru-run-test : saru-search failed with value " + repr(recode)
     print "  STDOUT :" + tagstdout
