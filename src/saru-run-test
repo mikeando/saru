@@ -210,13 +210,14 @@ class SingleTestRunner:
 
       if "CxxInclude" in filesettings:
         for incdir in " ".join(filesettings["CxxInclude"]).split():
+          incdir = os.path.expandvars(incdir)
           print >> makefile, "INCLUDES+= -I"+incdir+"\n"
       if "CxxExtraObjects" in filesettings:
         for obj in " ".join(filesettings["CxxExtraObjects"]).split():
-          print >> makefile, "EXTRAOBJECTS+= "+obj+"\n"
+          print >> makefile, "EXTRAOBJECTS+= "+os.path.expandvars(obj)+"\n"
       if "CxxFlags" in filesettings:
         for flags in filesettings["CxxFlags"]:
-          print >> makefile, "CXXFLAGS+= "+flags+"\n"
+          print >> makefile, "CXXFLAGS+= "+os.path.expandvars(flags)+"\n"
       
       print >> makefile, self.testname + ".test : " + self.testname
       print >> makefile, "\tg++ $(CXXFLAGS) " + self.testname + " -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(EXTRAOBJECTS)"
