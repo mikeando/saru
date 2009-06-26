@@ -218,9 +218,12 @@ class SingleTestRunner:
       if "CxxFlags" in filesettings:
         for flags in filesettings["CxxFlags"]:
           print >> makefile, "CXXFLAGS+= "+os.path.expandvars(flags)+"\n"
+      if "CxxLibs" in filesettings:
+        for libs in filesettings["CxxLibs"]:
+          print >> makefile, "CXXLIBS+= "+os.path.expandvars(libs)+"\n"
       
       print >> makefile, self.testname + ".test : " + self.testname
-      print >> makefile, "\tg++ $(CXXFLAGS) " + self.testname + " -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(EXTRAOBJECTS)"
+      print >> makefile, "\tg++ $(CXXFLAGS) " + self.testname + " -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(CXXLIBS) $(EXTRAOBJECTS)"
       makefile.close()
       
       # Lets try making it...
