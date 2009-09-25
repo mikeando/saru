@@ -32,6 +32,7 @@ import os
 import shutil
 import datetime
 import glob
+import time
 
 from stat import *
 
@@ -357,7 +358,10 @@ def runSuiteOfTests():
 
   try:
     logs = [ os.path.basename(x) for x in glob.glob( os.path.normpath(suitepath+"/saru*.log" ) ) ]
-    last_log = max( [ int(re.search("saru(\d+).log",x).group(1)) for x in logs ] )
+    if len( logs )>0:
+      last_log = max( [ int(re.search("saru(\d+).log",x).group(1)) for x in logs ] )
+    else:
+      last_log = -1
     logfile = open( os.path.normpath(suitepath+("/saru%04d.log" % (last_log+1) ) ), "w" )
     logfile.write( datetime.datetime.now().ctime() +"\n" )
     logfile.flush()
@@ -374,13 +378,18 @@ def runSuiteOfTests():
   runcount = 0
   for f in filelist:
     s = SingleTestRunner( f )
+    t_start = time.time()
     result = s.run()
+    t_end = time.time()
+    #TODO: At the moment the duration of all subtests is set to that of the parent test
+    #    : We should provide some way for the parent to divide that time up....
+    #    : And potentially report on the parent as a whole?
     for t in result:
       runcount = runcount + 1 
       print t.testname + " :",
       if not t.passed:
         if logfile:
-          logfile.write( t.testname + " : FAIL\n" )
+          logfile.write( t.testname + " : FAIL : %f\n" % (t_end - t_start) )
           logfile.flush()
         if( t.stderr=="" and t.mesg.strip()=="saru-run-test : execution of test failed with error code 1"):
           print "FAILED"
@@ -396,7 +405,7 @@ def runSuiteOfTests():
       else:
         passcount  = passcount +1
         if logfile:
-          logfile.write( t.testname + " : OK\n" )
+          logfile.write( t.testname + " : OK : %f\n" % (t_end - t_start) )
           logfile.flush()
         print "OK"
   
