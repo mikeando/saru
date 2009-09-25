@@ -31,6 +31,7 @@ import subprocess
 import os
 import shutil
 import datetime
+import glob
 
 from stat import *
 
@@ -352,6 +353,18 @@ def runSuiteOfTests():
   if ( not os.path.isdir(suitepath ) ):
     print >> sys.stderr, os.path.basename( sys.argv[0] )+" : requires a directory name."
     exit(1)
+
+
+  try:
+    logs = [ os.path.basename(x) for x in glob.glob( os.path.normpath(suitepath+"/saru*.log" ) ) ]
+    last_log = max( [ int(re.search("saru(\d+).log",x).group(1)) for x in logs ] )
+    logfile = open( os.path.normpath(suitepath+("/saru%04d.log" % (last_log+1) ) ), "w" )
+    logfile.write( datetime.datetime.now().ctime() +"\n" )
+    logfile.flush()
+  except IOError:
+    logfile = None
+
+
   filelist = os.listdir(suitepath)
   filelist.sort()
   filelist = [ os.path.normpath(suitepath+"/"+x) for x in filelist ] 
@@ -366,6 +379,9 @@ def runSuiteOfTests():
       runcount = runcount + 1 
       print t.testname + " :",
       if not t.passed:
+        if logfile:
+          logfile.write( t.testname + " : FAIL\n" )
+          logfile.flush()
         if( t.stderr=="" and t.mesg.strip()=="saru-run-test : execution of test failed with error code 1"):
           print "FAILED"
         else:
@@ -379,6 +395,9 @@ def runSuiteOfTests():
           print
       else:
         passcount  = passcount +1
+        if logfile:
+          logfile.write( t.testname + " : OK\n" )
+          logfile.flush()
         print "OK"
   
   print repr(passcount) + " / " + repr( runcount) 
@@ -458,4 +477,6 @@ elif (sys.argv[1] == "tag" ):
 print >> sys.stderr,"saru-run-test : Unknown mode "+sys.argv[1]
 printUsage()
 exit(1)
+
+# vim: set sw=2 ts=2 expandtab : 
 
