@@ -14,8 +14,8 @@ if( retcode != 1 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-expectedOutput="failingtest.bash : FAILED\n"
-expectedError="saru-run-test : execution of test failed with error code 1\n"
+expectedOutput="failingtest.bash : FAILED\n0 / 1 [ 0 skipped ]\n"
+expectedError=""
 
 OK=True
 if ( procstdout!= expectedOutput ):

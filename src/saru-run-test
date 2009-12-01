@@ -152,9 +152,12 @@ def parseSaruLogText( input ):
 
 class SaruTestResult:
   """Whether a test passes or fails and any other available information"""
-  def __init__(self, testname, passed, mesg, stdout, stderr):
+  PASSED = 0
+  FAILED = 1
+  SKIPPED = 2
+  def __init__(self, testname, status, mesg, stdout, stderr):
      self.testname = testname
-     self.passed = passed
+     self.status = status
      self.mesg = mesg
      self.stdout = stdout
      self.stderr = stderr
@@ -192,7 +195,7 @@ class SingleTestRunner:
       checkDotSaru( self.dotsaru )
       filesettings = getSettings(self.fulltestname)
     except SaruBaseError, e:
-      return [ SaruTestResult( self.testname, False, "saru-run-test : "+e.mesg, "", "") ]
+      return [ SaruTestResult( self.testname, SaruTestResult.FAILED, "saru-run-test : "+e.mesg, "", "") ]
 
     extension = os.path.splitext(self.testname)[1]
     if(extension==".cpp"):
@@ -235,7 +238,7 @@ class SingleTestRunner:
       retcode=makeProcess.returncode
 
       if(retcode!=0):
-        return [ SaruTestResult( self.testname, False, "saru-run-test : make failed with error code " + repr(retcode), make_stdout, make_stderr ) ]
+        return [ SaruTestResult( self.testname, SaruTestResult.FAILED, "saru-run-test : make failed with error code " + repr(retcode), make_stdout, make_stderr ) ]
       executable = [ os.path.normpath(self.dotsaru+"/bin/"+self.testname+".test") ]
     elif(extension==".py"):
       executable = [ os.path.normpath( self.dotsaru+"/bin/"+self.testname ) ]
@@ -248,8 +251,6 @@ class SingleTestRunner:
       executable = [ os.path.normpath( self.dotsaru+"/bin/"+self.testname ) ]
       shutil.copyfile( self.fulltestname, executable[0]) 
       os.chmod( executable[0], S_IREAD | S_IWUSR | S_IXUSR )
-    elif(extension==".dummymt"):
-      return [ SaruTestResult( self.testname+"::1", True, "true as dummy", "", "" ), SaruTestResult( self.testname+"::2", False, "false as dummy", "", "" ) ]
     else:
       print >> sys.stderr, "Unknown extension on file "+self.testname
       exit(1)
@@ -275,27 +276,41 @@ class SingleTestRunner:
     retval = [];
     matchOK = re.compile(r'^\s*([a-zA-Z0-9_:]+)\s*:\s*OK\s*$')
     matchFAILED = re.compile(r'^\s*([a-zA-Z0-9_:]+)\s*:\s*FAILED\s*$')
+    matchSKIPPED = re.compile(r'^\s*([a-zA-Z0-9_:]+)\s*:\s*SKIPPED\s*$')
     matchResult = re.compile(r'^(\d+)\s*/\s*(\d+)\s*$')
+    matchResultSkip = re.compile(r'^(\d+)\s*/\s*(\d+)\s*\[\s*(\d+)\s*skipped\s*\]\s*$')
     matchEmpty = re.compile(r'^\s*$')
     nPassed = 0
     nFailed = 0
+    nSkipped = 0
 
     for l in test_stdout.splitlines():
       match = matchOK.search( l );
       if(match):
-        retval.append( SaruTestResult( self.testname+"::"+match.group(1), True, "", "", stderrchunks[match.group(1)]) )
+        retval.append( SaruTestResult( self.testname+"::"+match.group(1), SaruTestResult.PASSED, "", "", stderrchunks[match.group(1)]) )
         nPassed = nPassed+1;
         continue
       match = matchFAILED.search( l );
       if(match):
-        retval.append( SaruTestResult( self.testname+"::"+match.group(1), False, "", "", stderrchunks[match.group(1)]) )
+        retval.append( SaruTestResult( self.testname+"::"+match.group(1), SaruTestResult.FAILED, "", "", stderrchunks[match.group(1)]) )
         nFailed = nFailed+1;
         continue
-      match = matchResult.search( l );
+      match = matchSKIPPED.search( l );
       if(match):
-        if (nPassed==int(match.group(1))) and ((nPassed+nFailed)==int(match.group(2))) :
+        retval.append( SaruTestResult( self.testname+"::"+match.group(1), SaruTestResult.SKIPPED, "", "", stderrchunks[match.group(1)]) )
+        nSkipped = nSkipped+1;
+        continue
+      match = matchResult.search( l );
+      if(match): 
+        if (nSkipped==0) and (nPassed==int(match.group(1))) and ((nPassed+nFailed)==int(match.group(2))) :
           return retval;
-        return [ SaruTestResult( self.testname, False, "saru-run-test : Incorrect reporting on pass / fail count.\n"+match.group(1)+" / " +match.group(2)+" vs "+str(nPassed)+" / " +str(nPassed+nFailed), test_stdout, test_stderr ) ]
+        return [ SaruTestResult( self.testname, SaruTestResult.FAILED, "saru-run-test : Incorrect reporting on pass / total count.\n"+match.group(1)+" / " +match.group(2)+" vs "+str(nPassed)+" / " +str(nPassed+nFailed), test_stdout, test_stderr ) ]
+      match = matchResultSkip.search( l );
+      if(match):
+        if nPassed==int(match.group(1)) and (nPassed+nFailed)==int(match.group(2)) and nSkipped==int(match.group(3)):
+          return retval
+        return [ SaruTestResult( self.testname, SaruTestResult.FAILED, "saru-run-test : Incorrect reporting on pass / total [ n skipped ] count.\n"+match.group(1)+" / " +match.group(2)+" vs "+str(nPassed)+" / " +str(nPassed+nFailed), test_stdout, test_stderr ) ]
+      
       match = matchEmpty.search( l );
       if(match):
         continue
@@ -304,9 +319,9 @@ class SingleTestRunner:
 
         
     if(retcode!=0):
-      return [ SaruTestResult( self.testname, False, "saru-run-test : execution of test failed with error code " + repr(retcode), test_stdout, test_stderr ) ]
+      return [ SaruTestResult( self.testname, SaruTestResult.FAILED, "saru-run-test : execution of test failed with error code " + repr(retcode), test_stdout, test_stderr ) ]
 
-    return [ SaruTestResult( self.testname, True, "OK", test_stdout, test_stderr ) ]
+    return [ SaruTestResult( self.testname, SaruTestResult.PASSED, "OK", test_stdout, test_stderr ) ]
 
 
 
@@ -321,29 +336,71 @@ def printUsage():
 
 
 
+
+
+def runFilesInList( filelist, logfile=None, progressfile=None ):
+  passcount = 0
+  failcount = 0
+  skipcount = 0
+  runcount = 0
+  for f in filelist:
+    s = SingleTestRunner( f )
+    t_start = time.time()
+    result = s.run()
+    t_end = time.time()
+    #TODO: At the moment the duration of all subtests is set to that of the parent test
+    #    : We should provide some way for the parent to divide that time up....
+    #    : And potentially report on the parent as a whole?
+    for t in result:
+      runcount = runcount + 1 
+      print t.testname + " :",
+      if t.status==SaruTestResult.FAILED:
+        if logfile:
+          logfile.write( t.testname + " : FAIL : %f\n" % (t_end - t_start) )
+          logfile.flush()
+        if( t.stderr=="" and t.mesg.strip()=="saru-run-test : execution of test failed with error code 1"):
+          print "FAILED"
+        else:
+          print "FAILED"
+          print "==MESSAGE==\n" + t.mesg
+          if ( t.stdout.strip()!=""):
+            print "==STDOUT==\n" + t.stdout.strip()
+          if ( t.stderr.strip()!=""):
+            print "==STDERR==\n" + t.stderr.strip()
+          print
+          print
+        failcount = failcount + 1
+      elif t.status==SaruTestResult.PASSED:
+        passcount  = passcount +1
+        if logfile:
+          logfile.write( t.testname + " : OK : %f\n" % (t_end - t_start) )
+          logfile.flush()
+        print "OK"
+      elif t.status==SaruTestResult.SKIPPED:
+        skipcount  = skipcount +1
+        if logfile:
+          logfile.write( t.testname + " : SKIPPED : %f\n" % (t_end - t_start) )
+          logfile.flush()
+        print "SKIPPED"
+      
+  print "%d / %d [ %d skipped ]" % (passcount, runcount-skipcount, skipcount)
+  if progressfile:
+    try:
+      f = open( os.path.normpath( progressfile ), "a" )
+      print >> f, datetime.datetime.now().isoformat(),
+      print >> f, " %d %d %d"%(passcount, runcount -skipcount, skipcount)
+    except IOError:
+      print "Unable to write results to log file"
+
+  if( failcount == 0):
+    exit(0)
+  exit(1)
+
 def runSingleTest():
   if ( len(sys.argv) != 3 ):
     printUsage()
     exit(1)
-  s = SingleTestRunner( sys.argv[2] )
-  result = s.run()
-  runcount = 0
-  passcount = 0
-  for t in result:
-    runcount = runcount + 1
-    if not t.passed:
-      print t.testname + " : FAILED"
-      print >> sys.stderr, t.mesg
-      if( t.stderr!="" ): 
-        print >> sys.stderr, t.stderr
-      if( t.stdout!="" ): 
-        print >> sys.stderr, t.stdout
-    else:
-      print t.testname + " : OK"
-      passcount = passcount + 1
-  if runcount==passcount:
-    exit(0)
-  exit(1)
+  runFilesInList( [ sys.argv[2] ] )
 
 
 def runSuiteOfTests():
@@ -374,52 +431,7 @@ def runSuiteOfTests():
   filelist = [ os.path.normpath(suitepath+"/"+x) for x in filelist ] 
   filelist = [ x for x in filelist if os.path.isfile(x) ]
   filelist = [ x for x in filelist if isSaru(x)[0] ]
-  passcount = 0
-  runcount = 0
-  for f in filelist:
-    s = SingleTestRunner( f )
-    t_start = time.time()
-    result = s.run()
-    t_end = time.time()
-    #TODO: At the moment the duration of all subtests is set to that of the parent test
-    #    : We should provide some way for the parent to divide that time up....
-    #    : And potentially report on the parent as a whole?
-    for t in result:
-      runcount = runcount + 1 
-      print t.testname + " :",
-      if not t.passed:
-        if logfile:
-          logfile.write( t.testname + " : FAIL : %f\n" % (t_end - t_start) )
-          logfile.flush()
-        if( t.stderr=="" and t.mesg.strip()=="saru-run-test : execution of test failed with error code 1"):
-          print "FAILED"
-        else:
-          print "FAILED???"
-          print "==MESSAGE==\n" + t.mesg
-          if ( t.stdout.strip()!=""):
-            print "==STDOUT==\n" + t.stdout.strip()
-          if ( t.stderr.strip()!=""):
-            print "==STDERR==\n" + t.stderr.strip()
-          print
-          print
-      else:
-        passcount  = passcount +1
-        if logfile:
-          logfile.write( t.testname + " : OK : %f\n" % (t_end - t_start) )
-          logfile.flush()
-        print "OK"
-  
-  print repr(passcount) + " / " + repr( runcount) 
-  try:
-    f = open( os.path.normpath(suitepath+"/saru.progress" ), "a" )
-    print >> f, datetime.datetime.now().isoformat(),
-    print >> f, " "+str(passcount)+" "+str( runcount )
-  except IOError:
-    print "Unable to write results to log file"
-
-  if( passcount == runcount ):
-    exit(0)
-  exit(1)
+  runFilesInList( filelist, logfile, suitepath+"/saru.progress" )
 
 
 
@@ -440,37 +452,7 @@ def runTaggedTests():
   
   filelist = tagstdout .splitlines()
 #  filelist = [ os.path.normpath(tagpath+"/"+x) for x in filelist ] 
-
-  passcount = 0
-  runcount = 0
-  for f in filelist:
-    s = SingleTestRunner( f )
-    result = s.run()
-    for t in result:
-      runcount = runcount + 1 
-      print t.testname + " :",
-      if not t.passed:
-        if( t.stderr=="" and t.mesg.strip()=="saru-run-test : execution of test failed with error code 1"):
-          print "FAILED"
-        else:
-          print "FAILED???"
-          print "==MESSAGE==\n" + t.mesg
-          if ( t.stdout.strip()!=""):
-            print "==STDOUT==\n" + t.stdout.strip()
-          if ( t.stderr.strip()!=""):
-            print "==STDERR==\n" + t.stderr.strip()
-          print
-          print
-      else:
-        passcount  = passcount +1
-        print "OK"
-  
-  print repr(passcount) + " / " + repr( runcount) 
-  if( passcount == runcount ):
-    exit(0)
-  exit(1)
-
-
+  runFilesInList(filelist)
 
 if (len(sys.argv) < 2):
   printUsage()

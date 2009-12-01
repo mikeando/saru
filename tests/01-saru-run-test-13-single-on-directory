@@ -22,12 +22,18 @@ if (os.path.isdir("fakeproject/.saru") ):
 origdir = os.getcwd()
 os.chdir("fakeproject")
 
-runProc = subprocess.Popen( [ "../../src/saru-run-test","single", "subdir" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+runProc = subprocess.Popen( [ "../../src/saru-run-test","single", "include" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 (procstdout, procstderr) = runProc.communicate()
 
 os.chdir(origdir)
 
-expectedOutput="saru-run-test : Doesn't run on a directory yet.\n"
+expectedOutput="""include : FAILED
+==MESSAGE==
+saru-run-test : Doesn't run on a directory yet.
+
+
+0 / 1 [ 0 skipped ]
+"""
 
 
 if ( runProc.returncode!=1 ):
@@ -38,11 +44,11 @@ if ( runProc.returncode!=1 ):
   print procstderr
   exit(1)
 
-if(expectedOutput!=procstderr):
+if(expectedOutput!=procstdout):
   print >> sys.stderr, "output not as expected"
-  diff =  difflib.context_diff( procstderr.splitlines(), expectedOutput.splitlines() )
-  for l in diff:
-    print l 
+  d=difflib.Differ()
+  result = list(d.compare(procstdout.splitlines(1), expectedOutput.splitlines(1)))
+  sys.stderr.writelines(result)
   exit(1)
 
 exit(0)

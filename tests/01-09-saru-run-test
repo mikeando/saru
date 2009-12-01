@@ -17,7 +17,7 @@ if( retcode != 0 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-expectedOutput="testtag01.cpp : OK\ntesttag02.bash : OK\ntesttag03.py : OK\n3 / 3\n"
+expectedOutput="testtag01.cpp : OK\ntesttag02.bash : OK\ntesttag03.py : OK\n3 / 3 [ 0 skipped ]\n"
 expectedError=""
 if ( procstdout!= expectedOutput ):
   print >> sys.stderr, "output not as expected"

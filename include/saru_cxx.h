@@ -36,10 +36,23 @@ namespace saru
 {
 
 
-class TestFailed 
+class TestFailed
 {
 public:
   TestFailed( int lineNumber, const char * const filename ) : lineNumber_(lineNumber), filename_(filename) {}
+
+  void setMessage( const std::string & message ) { message_ = message; }
+  std::string mesg() const { return message_; }
+
+  int lineNumber_;
+  const char * const filename_;
+  std::string message_;
+};
+
+class TestSkipped
+{
+public:
+  TestSkipped( int lineNumber, const char * const filename ) : lineNumber_(lineNumber), filename_(filename) {}
 
   void setMessage( const std::string & message ) { message_ = message; }
   std::string mesg() const { return message_; }
@@ -75,7 +88,7 @@ template<typename X, typename Y>
 class TestEqualityFailed : public TestFailed
 {
 public:
-  TestEqualityFailed( const X & x, const Y & y, int lineNumber, const char * const filename ) : TestFailed(lineNumber, filename), x_(x), y_(y) 
+  TestEqualityFailed( const X & x, const Y & y, int lineNumber, const char * const filename ) : TestFailed(lineNumber, filename), x_(x), y_(y)
   {
     std::stringstream ss;
     ss<<filename<<":"<<lineNumber<<": saru_assert_equal failed. Expected \""<<x<<"\" got \""<<y<<"\"";
@@ -105,10 +118,15 @@ void error( const std::string & mesg, int lineNumber, const char * filename )
   throw TestError(mesg, lineNumber, filename );
 }
 
+void skip( const std::string & mesg, int lineNumber, const char * filename )
+{
+  throw TestSkipped(mesg, lineNumber, filename );
+}
+
 class TestLogger
 {
 public:
-  TestLogger() : runCount(0), passedCount(0) {}
+  TestLogger() : runCount(0), passedCount(0), skippedCount(0), failedCount(0) {}
   virtual ~TestLogger() {}
 
   virtual void registerTestPassed( const std::string & testname )
@@ -117,23 +135,36 @@ public:
     ++passedCount;
     std::cout<<testname<< " : OK\n";
   }
+
   virtual void registerTestFailed( const std::string & testname, TestFailed & exception )
   {
     ++runCount;
+    ++failedCount;
     std::cout<<testname << " : FAILED\n";
+    std::cerr<<"\n    In function " << testname <<std::endl;
+    std::cerr<<exception.mesg()<<std::endl;
+  }
+
+  virtual void registerTestSkipped( const std::string & testname, TestSkipped & exception )
+  {
+    ++runCount;
+    ++skippedCount;
+    std::cout<<testname << " : SKIPPED\n";
     std::cerr<<"\n    In function " << testname <<std::endl;
     std::cerr<<exception.mesg()<<std::endl;
   }
 
   void printSummary() const
   {
-    std::cout<<passedCount<<" / "<<runCount<<std::endl;
+    std::cout<<passedCount<<" / "<<(runCount-skippedCount)<<" [ "<<skippedCount<<" skipped ]"<<std::endl;
   }
 
-  bool allOK() const { return runCount==passedCount; }
+  bool allOK() const { return failedCount==0; }
 
   unsigned int runCount;
   unsigned int passedCount;
+  unsigned int failedCount;
+  unsigned int skippedCount;
 };
 
 void do_test( void(*fn)(), const std::string & testname, TestLogger & logger )
@@ -147,6 +178,10 @@ void do_test( void(*fn)(), const std::string & testname, TestLogger & logger )
   catch( TestFailed & err )
   {
      logger.registerTestFailed( testname, err );
+  }
+  catch( TestSkipped & err )
+  {
+     logger.registerTestSkipped( testname, err );
   }
   std::cerr<<"<@saru end "+testname+" @>"<<std::endl;
 }
@@ -164,6 +199,10 @@ void do_test( void(T::*fn)(), const std::string & testname, TestLogger & logger 
   catch( TestFailed & err )
   {
      logger.registerTestFailed( testname, err );
+  }
+  catch( TestSkipped & err )
+  {
+     logger.registerTestSkipped( testname, err );
   }
   std::cerr<<"<@saru end "+testname+" @>"<<std::endl;
 }
@@ -185,7 +224,11 @@ do { \
 saru::error(m, __LINE__, __FILE__); \
 } while(false)
 
-#define SARU_TEST( test, logger ) saru::do_test(&test,#test,logger)
+#define saru_skip(m) \
+do { \
+saru::skip(m, __LINE__, __FILE__); \
+} while(false)
 
+#define SARU_TEST( test, logger ) saru::do_test(&test,#test,logger)
 
 #endif

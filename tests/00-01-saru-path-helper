@@ -5,7 +5,7 @@ import subprocess
 import os
 
 
-pathProc = subprocess.Popen( [ "../src/saru-path-helper", "find-root", "fakeproject/subdir" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+pathProc = subprocess.Popen( [ "../src/saru-path-helper", "find-root", "fakeproject/include/" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 retcode = pathProc.wait()
 
 if( retcode != 0 ) :

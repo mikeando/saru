@@ -21,12 +21,13 @@ if ( len(lines)!= 0 ):
   exit(1)
 
 lines = procstdout.splitlines()
-if ( len(lines)!= 1 ):
+if ( len(lines)!= 2 ):
   print >> sys.stderr, "Wrong number of stdout lines"
   print >> sys.stderr, procstdout
   exit(1)
-if ( lines[0] != "passingtest.bash : OK"):
-  print >> sys.stderr, "Line of stdout not \"passingtest.bash: OK\""
+expected = "passingtest.bash : OK\n1 / 1 [ 0 skipped ]"
+if ( lines != expected.splitlines()):
+  print >> sys.stderr, "Line of stdout not " + expected
   print >> sys.stderr, procstdout
   exit(1)
 exit(0)

@@ -27,7 +27,7 @@ runProc = subprocess.Popen( [ "../../src/saru-run-test","single", "testphppass.p
 
 os.chdir(origdir)
 
-expectedOutput="testphppass.php : OK\n"
+expectedOutput="testphppass.php : OK\n1 / 1 [ 0 skipped ]\n"
 expectedErr=""
 
 if ( runProc.returncode!=0 ):
@@ -40,16 +40,16 @@ if ( runProc.returncode!=0 ):
 
 if(expectedOutput!=procstdout):
   print >> sys.stderr, "output not as expected"
-  diff =  difflib.context_diff( procstdout.splitlines(), expectedOutput.splitlines() )
-  for l in diff:
-    print l 
+  d=difflib.Differ()
+  result = list(d.compare(procstdout.splitlines(1), expectedOutput.splitlines(1)))
+  sys.stderr.writelines(result)
   exit(1)
 
 if(expectedErr!=procstderr):
   print >> sys.stderr, "stderr not as expected"
-  diff =  difflib.context_diff( procstderr.splitlines(), expectedErr.splitlines() )
-  for l in diff:
-    print l 
+  d=difflib.Differ()
+  result = list(d.compare(procstderr.splitlines(1), expectedErr.splitlines(1)))
+  sys.stderr.writelines(result)
   exit(1)
 
 exit(0)

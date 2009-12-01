@@ -17,7 +17,7 @@ if( retcode != 0 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-expectedOutput="testtag03.py : OK\n"
+expectedOutput="testtag03.py : OK\n1 / 1 [ 0 skipped ]\n"
 expectedError=""
 
 OK=True

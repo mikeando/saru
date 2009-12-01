@@ -3,6 +3,7 @@
 import sys
 import subprocess
 import os
+import difflib
 
 
 runProc = subprocess.Popen( [ "../src/saru-run-test","single", "fakeproject/nonexistanttest.bash" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
@@ -17,8 +18,15 @@ if( retcode != 1 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-expectedOutput="nonexistanttest.bash : FAILED\n"
-expectedError="saru-run-test : nonexistant test nonexistanttest.bash\n"
+expectedOutput="""nonexistanttest.bash : FAILED
+==MESSAGE==
+saru-run-test : nonexistant test nonexistanttest.bash
+
+
+0 / 1 [ 0 skipped ]
+"""
+
+expectedError=""
 
 OK=True
 if ( procstdout!= expectedOutput ):
@@ -27,6 +35,9 @@ if ( procstdout!= expectedOutput ):
   print >> sys.stderr, expectedOutput
   print >> sys.stderr, "ACTUAL:"
   print >> sys.stderr, procstdout
+  d=difflib.Differ()
+  result = list(d.compare(procstdout.splitlines(1), expectedOutput.splitlines(1)))
+  sys.stderr.writelines(result)
   OK=False
 
 if ( procstderr!= expectedError ):

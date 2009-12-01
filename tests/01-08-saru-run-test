@@ -17,8 +17,13 @@ if( retcode != 1 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-expectedOutput="unknown.fmt : FAILED\n"
-expectedError="saru-run-test : file is of unknown format\n"
+expectedOutput="""unknown.fmt : FAILED\n==MESSAGE==
+saru-run-test : file is of unknown format
+
+
+0 / 1 [ 0 skipped ]
+"""
+expectedError=""
 if ( procstdout!= expectedOutput ):
   print >> sys.stderr, "output not as expected"
   print >> sys.stderr, "EXPECTED:"

@@ -3,6 +3,7 @@
 import sys
 import subprocess
 import os
+import difflib
 
 
 runProc = subprocess.Popen( [ "../src/saru-run-test","single", "fakeproject/nonsaru.bash" ], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
@@ -17,8 +18,15 @@ if( retcode != 1 ) :
 
 (procstdout, procstderr) = runProc.communicate()
 
-expectedOutput="nonsaru.bash : FAILED\n"
-expectedError="saru-run-test : file does not contain any saru test information\n"
+expectedOutput="""nonsaru.bash : FAILED
+==MESSAGE==
+saru-run-test : file does not contain any saru test information
+
+
+0 / 1 [ 0 skipped ]
+"""
+
+expectedError=""
 
 OK=True
 if ( procstdout!= expectedOutput ):
@@ -27,6 +35,9 @@ if ( procstdout!= expectedOutput ):
   print >> sys.stderr, expectedOutput
   print >> sys.stderr, "ACTUAL:"
   print >> sys.stderr, procstdout
+  d=difflib.Differ()
+  result = list(d.compare(procstdout.splitlines(1), expectedOutput.splitlines(1)))
+  sys.stderr.writelines(result)
   OK=False
 
 if ( procstderr!= expectedError ):
