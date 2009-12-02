@@ -33,9 +33,36 @@ import shutil
 import datetime
 import glob
 import time
+import signal
+import threading
 
 from stat import *
 
+class KillerThread(threading.Thread):
+  def __init__(self, pid, timeout, event ):
+    threading.Thread.__init__(self)
+    self.pid = pid
+    self.timeout = timeout
+    self.event = event
+    self.setDaemon(True)
+  def run(self):
+    self.event.wait(self.timeout)
+    if not self.event.isSet() :
+      try:
+        os.kill( self.pid, signal.SIGKILL )
+      except OSError, e:
+        #This is raised if the process has already completed
+        pass
+
+def runTimed(dt, args, kwargs ):
+  event = threading.Event()
+  proc = subprocess.Popen(args, **kwargs )
+  killer = KillerThread(proc.pid, dt, event)
+  killer.start()
+  
+  (stdout, stderr) = proc.communicate()
+  event.set()
+  return (stdout,stderr, proc.returncode)
 
 
 class SaruBaseError(Exception):
@@ -256,10 +283,14 @@ class SingleTestRunner:
       exit(1)
 
     # Lets try running it...
-    testProcess = subprocess.Popen( executable, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True ) 
+    max_time = 120
+    if 'MaxTime' in filesettings :
+      max_time = int( filesettings['MaxTime'] )
 
-    test_stdout, test_stderr = testProcess.communicate()
-    retcode=testProcess.returncode
+    (test_stdout, test_stderr, retcode ) = runTimed(max_time, executable, { 'stdout':subprocess.PIPE, 'stderr':subprocess.PIPE, 'close_fds':True } ) 
+
+    if retcode==-9:
+      return [ SaruTestResult( self.testname, SaruTestResult.FAILED, "saru-run-test : test took too long", test_stdout, test_stderr ) ]
 
 #if test_stdlout looks like this then we can return all the tests.
 #test_basics : OK
