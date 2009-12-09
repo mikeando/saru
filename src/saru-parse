@@ -157,12 +157,8 @@ def parseBashFile( infile ):
     break
   return settings
 
-# Get a list of  all the SARU tags in a dummy test file
-def parseDummyMulti( infile ):
-  return { "moo":"foo" }
 
-
-knownFileTypes = { ".cpp":parseCXXFile, ".bash":parseBashFile, ".py":parsePythonFile, ".dummymt":parseDummyMulti, ".php":parsePHPFile }
+knownFileTypes = { ".cpp":parseCXXFile, ".bash":parseBashFile, ".py":parsePythonFile, ".php":parsePHPFile }
 
 def printUsage():
   print >> sys.stderr, "USAGE: saru-parse dump file"
