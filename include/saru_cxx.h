@@ -53,6 +53,7 @@ class TestSkipped
 {
 public:
   TestSkipped( int lineNumber, const char * const filename ) : lineNumber_(lineNumber), filename_(filename) {}
+  TestSkipped( const std::string &message, int lineNumber, const char * const filename ) : lineNumber_(lineNumber), filename_(filename), message_(message) {}
 
   void setMessage( const std::string & message ) { message_ = message; }
   std::string mesg() const { return message_; }
@@ -126,7 +127,7 @@ void skip( const std::string & mesg, int lineNumber, const char * filename )
 class TestLogger
 {
 public:
-  TestLogger() : runCount(0), passedCount(0), skippedCount(0), failedCount(0) {}
+  TestLogger() : runCount(0), passedCount(0), failedCount(0), skippedCount(0) {}
   virtual ~TestLogger() {}
 
   virtual void registerTestPassed( const std::string & testname )
