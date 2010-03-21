@@ -73,6 +73,7 @@ class SqliteDbLogger:
 
   def __init__(self):
     self.conn = sqlite3.connect("runinfo.sqlite")
+    self.conn.text_factory = str
     self.c = self.conn.cursor()
     if not self.table_exists("runs"):
       self.c.execute("CREATE TABLE runs ( id int, state text )")
