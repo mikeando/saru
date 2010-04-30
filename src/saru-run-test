@@ -302,7 +302,7 @@ class SingleTestRunner:
           print >> makefile, "CXXLIBS+= "+os.path.expandvars(libs)+"\n"
       
       print >> makefile, self.testname + ".test : " + self.testname
-      print >> makefile, "\tg++ $(CXXFLAGS) " + self.testname + " -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(CXXLIBS) $(EXTRAOBJECTS)"
+      print >> makefile, "\tg++ $(CXXFLAGS) " + self.testname + " -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(EXTRAOBJECTS) $(CXXLIBS)"
       makefile.close()
       
       # Lets try making it...
