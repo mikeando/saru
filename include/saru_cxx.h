@@ -32,6 +32,8 @@
 #include <sstream>
 #include <iostream>
 
+void saru_break_point() {}
+
 namespace saru
 {
 
@@ -105,22 +107,26 @@ template<typename X, typename Y>
 void assert_equal_template( const X & x, const Y & y, int lineNumber, const char * filename )
 {
   if(x==y) return;
+  saru_break_point();
   throw TestEqualityFailed<X,Y>(x,y,lineNumber,filename);
 }
 
 void assert_template( bool v, const char * testmesg, int lineNumber, const char * filename )
 {
   if( v ) return;
+  saru_break_point();
   throw TestAssertFailed(testmesg,lineNumber,filename);
 }
 
 void error( const std::string & mesg, int lineNumber, const char * filename )
 {
+  saru_break_point();
   throw TestError(mesg, lineNumber, filename );
 }
 
 void skip( const std::string & mesg, int lineNumber, const char * filename )
 {
+  saru_break_point();
   throw TestSkipped(mesg, lineNumber, filename );
 }
 
