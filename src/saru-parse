@@ -185,14 +185,6 @@ def doSaruParseDump():
     exit(1)
 
 
-  #Is there a saruconf file at the same location
-  saruconfpath = os.path.join( testdir, "saruconf" );
-  saruconfsettings = {}
-  try:
-    saruconffile = open(saruconfpath,"r")
-    saruconfsettings = parseSaruconfFile(saruconffile)
-  except IOError:
-    pass
 
   try:
     infile = open(fulltestname, "r")
@@ -205,6 +197,19 @@ def doSaruParseDump():
   if ( settings=={} ):
     print >> sys.stderr, "saru-parse: No settings in file"
     exit(1)
+
+  #Are we overriding the conffile
+  if 'ConfFile' in settings:
+    saruconfpath = os.path.join( testdir, settings['ConfFile'][0] )
+  else:
+    saruconfpath = os.path.join( testdir, "saruconf" );
+  #Is there a saruconf file at the same location
+  saruconfsettings = {}
+  try:
+    saruconffile = open(saruconfpath,"r")
+    saruconfsettings = parseSaruconfFile(saruconffile)
+  except IOError:
+    pass
 
   for k,v in saruconfsettings.iteritems():
      for vv in v:
