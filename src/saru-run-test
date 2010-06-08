@@ -279,28 +279,55 @@ class SingleTestRunner:
 
       # BUILD A MAKE FILE...
       # TODO Make these use the settings taht got read in from the saru-parse stage
-      print >> makefile, "INCLUDES=\n"
-      print >> makefile, "EXTRAOBJECTS=\n"
-      print >> makefile, "CXXFLAGS=\n"
       
       includeRegExp = re.compile(r"\s*CxxInclude\s*:\s*(.*)$")
       extraObjsRegExp = re.compile(r"\s*CxxExtraObjects\s*:\s*(.*)$")
       cxxFlagsRegExp = re.compile(r"\s*CxxFlags\s*:\s*(.*)$")
 
+      print >> makefile, "###################"
+      print >> makefile, "# INCLUDES"
+      print >> makefile, "###################\n"
+      print >> makefile, "INCLUDES="
       if "CxxInclude" in filesettings:
         for incdir in " ".join(filesettings["CxxInclude"]).split():
           incdir = os.path.expandvars(incdir)
-          print >> makefile, "INCLUDES+= -I"+incdir+"\n"
+          print >> makefile, "INCLUDES+= -I"+incdir
+      print >> makefile, "\n"
+      print >> makefile, "###################"
+      print >> makefile, "# EXTRA OBJECTS"
+      print >> makefile, "###################\n"
+      print >> makefile, "EXTRAOBJECTS="
       if "CxxExtraObjects" in filesettings:
         for obj in " ".join(filesettings["CxxExtraObjects"]).split():
-          print >> makefile, "EXTRAOBJECTS+= "+os.path.expandvars(obj)+"\n"
+          print >> makefile, "EXTRAOBJECTS+= "+os.path.expandvars(obj)
+      print >> makefile, "\n"
+      print >> makefile, "###################"
+      print >> makefile, "# COMPILE FLAGS"
+      print >> makefile, "###################\n"
+      print >> makefile, "CXXFLAGS="
       if "CxxFlags" in filesettings:
         for flags in filesettings["CxxFlags"]:
-          print >> makefile, "CXXFLAGS+= "+os.path.expandvars(flags)+"\n"
+          print >> makefile, "CXXFLAGS+= "+os.path.expandvars(flags)
+      print >> makefile, "\n"
+      print >> makefile, "###################"
+      print >> makefile, "# LIBRARIES"
+      print >> makefile, "###################\n"
+      print >> makefile, "CXXLIBS="
       if "CxxLibs" in filesettings:
-        for libs in filesettings["CxxLibs"]:
-          print >> makefile, "CXXLIBS+= "+os.path.expandvars(libs)+"\n"
-      
+        newlibs = []
+        for lib in filesettings["CxxLibs"]:
+          m = re.match(r"(.*)\w*:([^:]*)$", lib)
+          if m:
+            newlibs.append( [ int(m.group(2).strip()), m.group(1).strip() ] )
+          else:
+            newlibs.append( [ 10, lib ] )
+
+        newlibs.sort( None, lambda x : x[0] )
+
+        for lib in newlibs:
+          print >> makefile, "CXXLIBS+= "+os.path.expandvars(lib[1])
+      print >> makefile, "\n"
+
       print >> makefile, self.testname + ".test : " + self.testname
       print >> makefile, "\tg++ $(CXXFLAGS) " + self.testname + " -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(EXTRAOBJECTS) $(CXXLIBS)"
       makefile.close()
