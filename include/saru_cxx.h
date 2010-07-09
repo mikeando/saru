@@ -91,15 +91,24 @@ template<typename X, typename Y>
 class TestEqualityFailed : public TestFailed
 {
 public:
-  TestEqualityFailed( const X & x, const Y & y, int lineNumber, const char * const filename ) : TestFailed(lineNumber, filename), x_(x), y_(y)
+  TestEqualityFailed( const X & x, const Y & y, int lineNumber, const char * const filename ) : TestFailed(lineNumber, filename)
   {
     std::stringstream ss;
     ss<<filename<<":"<<lineNumber<<": saru_assert_equal failed. Expected \""<<x<<"\" got \""<<y<<"\"";
     setMessage(ss.str());
   }
+};
 
-  const X & x_;
-  const Y & y_;
+template<typename X, typename Y>
+class TestNonEqualityFailed : public TestFailed
+{
+public:
+  TestNonEqualityFailed( const X & x, const Y & y, int lineNumber, const char * const filename ) : TestFailed(lineNumber, filename)
+  {
+    std::stringstream ss;
+    ss<<filename<<":"<<lineNumber<<": saru_assert_not_equal failed. Values are \""<<x<<"\" and \""<<y<<"\"";
+    setMessage(ss.str());
+  }
 };
 
 
@@ -109,6 +118,14 @@ void assert_equal_template( const X & x, const Y & y, int lineNumber, const char
   if(x==y) return;
   saru_break_point();
   throw TestEqualityFailed<X,Y>(x,y,lineNumber,filename);
+}
+
+template<typename X, typename Y>
+void assert_not_equal_template( const X & x, const Y & y, int lineNumber, const char * filename )
+{
+  if(x!=y) return;
+  saru_break_point();
+  throw TestNonEqualityFailed<X,Y>(x,y,lineNumber,filename);
 }
 
 void assert_template( bool v, const char * testmesg, int lineNumber, const char * filename )
@@ -224,6 +241,11 @@ saru::assert_template(x, #x, __LINE__,__FILE__); \
 #define saru_assert_equal(x,y) \
 do { \
 saru::assert_equal_template(x,y,__LINE__,__FILE__); \
+} while(false)
+
+#define saru_assert_not_equal(x,y) \
+do { \
+saru::assert_not_equal_template(x,y,__LINE__,__FILE__); \
 } while(false)
 
 #define saru_error(m) \
