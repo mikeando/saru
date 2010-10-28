@@ -561,8 +561,6 @@ def runSuiteOfTests():
         l = os.path.normpath( d +"/" + l )
       testmodules.append(l)
 
-  print allmodules
-
 
   alltests = []
   for d in allmodules:
