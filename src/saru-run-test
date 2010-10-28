@@ -513,6 +513,8 @@ def runSingleTest():
   runFilesInList( NullDbLogger(), [ sys.argv[2] ] )
 
 
+  
+
 def runSuiteOfTests():
   if len(sys.argv)!=3:
     print >> sys.stderr, "saru-run-test : suite mode expects one additional argument"
@@ -536,12 +538,42 @@ def runSuiteOfTests():
     logfile = None
 
 
-  filelist = os.listdir(suitepath)
-  filelist.sort()
-  filelist = [ os.path.normpath(suitepath+"/"+x) for x in filelist ] 
-  filelist = [ x for x in filelist if os.path.isfile(x) ]
-  filelist = [ x for x in filelist if isSaru(x)[0] ]
-  runFilesInList( SqliteDbLogger(), filelist, logfile, suitepath+"/saru.progress" )
+  testmodules = [ os.path.normpath(suitepath) ]
+  allmodules  = [ ]
+
+  while len(testmodules) > 0:
+    # Get every thing from the saru_submodules
+    d = testmodules[0]
+
+    if d not in allmodules:
+      allmodules.append(d)
+
+    testmodules = testmodules[1:]
+    if not os.path.exists( d + "/saru_submodules" ):
+      continue
+    f = open( os.path.normpath( d + "/saru_submodules"), "r" )
+    for l in f.readlines():
+      l=l.strip()
+      if l[0]=='#':
+        continue
+      # is it a relative path
+      if l[0]!='/':
+        l = os.path.normpath( d +"/" + l )
+      testmodules.append(l)
+
+  print allmodules
+
+
+  alltests = []
+  for d in allmodules:
+    filelist = os.listdir(d)
+    filelist.sort()
+    filelist = [ os.path.normpath(d+"/"+x) for x in filelist ] 
+    filelist = [ x for x in filelist if os.path.isfile(x) ]
+    filelist = [ x for x in filelist if isSaru(x)[0] ]
+    alltests += filelist
+
+  runFilesInList( SqliteDbLogger(), alltests, logfile, suitepath+"/saru.progress" )
 
 
 
