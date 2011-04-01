@@ -74,6 +74,12 @@ public:
     ss<<filename<<":"<<lineNumber<<": saru_assert failed. : "<<test;
     setMessage(ss.str());
   }
+  TestAssertFailed( const char * test, const std::string & mesg, int lineNumber, const char * const filename ) : TestFailed(lineNumber, filename)
+  {
+    std::stringstream ss;
+    ss<<filename<<":"<<lineNumber<<": saru_assert failed. : "<<test<<" ["<<mesg<<"]";
+    setMessage(ss.str());
+  }
 };
 
 class TestError : public TestFailed
@@ -95,6 +101,13 @@ public:
   {
     std::stringstream ss;
     ss<<filename<<":"<<lineNumber<<": saru_assert_equal failed. Expected \""<<x<<"\" got \""<<y<<"\"";
+    setMessage(ss.str());
+  }
+
+  TestEqualityFailed( const X & x, const Y & y, const std::string & mesg, int lineNumber, const char * const filename ) : TestFailed(lineNumber, filename)
+  {
+    std::stringstream ss;
+    ss<<filename<<":"<<lineNumber<<": saru_assert_equal failed. Expected \""<<x<<"\" got \""<<y<<"\" ["<<mesg<<"]";
     setMessage(ss.str());
   }
 };
@@ -121,6 +134,14 @@ void assert_equal_template( const X & x, const Y & y, int lineNumber, const char
 }
 
 template<typename X, typename Y>
+void assert_equal_mesg_template( const X & x, const Y & y, const std::string & mesg, int lineNumber, const char * filename )
+{
+  if(x==y) return;
+  saru_break_point();
+  throw TestEqualityFailed<X,Y>(x,y,mesg,lineNumber,filename);
+}
+
+template<typename X, typename Y>
 void assert_not_equal_template( const X & x, const Y & y, int lineNumber, const char * filename )
 {
   if(x!=y) return;
@@ -133,6 +154,13 @@ void assert_template( bool v, const char * testmesg, int lineNumber, const char 
   if( v ) return;
   saru_break_point();
   throw TestAssertFailed(testmesg,lineNumber,filename);
+}
+
+void assert_mesg_template( bool v, const char * testmesg, const std::string & mesg, int lineNumber, const char * filename )
+{
+  if( v ) return;
+  saru_break_point();
+  throw TestAssertFailed(testmesg,mesg,lineNumber,filename);
 }
 
 void error( const std::string & mesg, int lineNumber, const char * filename )
@@ -238,9 +266,19 @@ do { \
 saru::assert_template(x, #x, __LINE__,__FILE__); \
 } while(false)
 
+#define saru_assert_m(x,mesg) \
+do { \
+saru::assert_mesg_template(x, #x, mesg, __LINE__,__FILE__); \
+} while(false)
+
 #define saru_assert_equal(x,y) \
 do { \
 saru::assert_equal_template(x,y,__LINE__,__FILE__); \
+} while(false)
+
+#define saru_assert_equal_m(x,y,mesg) \
+do { \
+saru::assert_equal_mesg_template(x,y,mesg,__LINE__,__FILE__); \
 } while(false)
 
 #define saru_assert_not_equal(x,y) \
