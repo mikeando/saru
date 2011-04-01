@@ -369,6 +369,62 @@ class SingleTestRunner:
     if retcode==-9:
       return [ SaruTestResult( self.testname, SaruTestResult.FAILED, "saru-run-test : test took too long", test_stdout, test_stderr ) ]
 
+
+####################################
+#  Parse google mock format output #
+####################################
+
+#Google mock output looks like this
+# [==========] Running 2 tests from 1 test case.
+# [----------] Global test environment set-up.
+# [----------] 2 tests from PartyTest
+# [ RUN      ] PartyTest.CallsDance
+# [       OK ] PartyTest.CallsDance (1 ms)
+# [ RUN      ] PartyTest.CallsDanceFails
+# gmock_test.cpp:69: Failure
+# Value of: p.party()
+#   Actual: false
+# Expected: true
+# [  FAILED  ] PartyTest.CallsDanceFails (0 ms)
+# [----------] 2 tests from PartyTest (1 ms total)
+#
+# [----------] Global test environment tear-down
+# [==========] 2 tests from 1 test case ran. (1 ms total)
+# [  PASSED  ] 1 test.
+# [  FAILED  ] 1 test, listed below:
+# [  FAILED  ] PartyTest.CallsDanceFails
+#
+#  1 FAILED TEST
+
+
+    if 'Format' in filesettings and filesettings['Format']==['gtest']:
+      retval = []
+      errchunks = []
+      matchRUN     = re.compile(r'^\[\s+RUN\s+]\s+(.*)$')
+      matchOK      = re.compile(r'^\[\s+OK\s+]\s+(.*)\s+\(.*\)\s*$')
+      matchFAILED  = re.compile(r'^\[\s+FAILED\s+]\s+(.*)\s+\(.*\)\s*$')
+      for l in test_stdout.splitlines():
+        match = matchRUN.search(l)
+        if match:
+          errchunks = []
+          continue
+        match = matchOK.search(l)
+        if match:
+          retval.append( SaruTestResult( self.testname+'::'+match.group(1).strip(), SaruTestResult.PASSED, "", "", "\n".join( errchunks ) ) )
+          continue
+        match = matchFAILED.search(l)
+        if match:
+          retval.append( SaruTestResult( self.testname+'::'+match.group(1).strip(), SaruTestResult.FAILED, "", "", "\n".join( errchunks ) ) )
+          continue
+        else:
+          errchunks.append( l.rstrip() )
+
+      return retval
+
+####################################
+#  Parse saru internal formats     #
+####################################
+
 #if test_stdlout looks like this then we can return all the tests.
 #test_basics : OK
 #test_alt : OK
