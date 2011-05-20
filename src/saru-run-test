@@ -407,21 +407,33 @@ class SingleTestRunner:
       matchRUN     = re.compile(r'^\[\s+RUN\s+]\s+(.*)$')
       matchOK      = re.compile(r'^\[\s+OK\s+]\s+(.*)\s+\(.*\)\s*$')
       matchFAILED  = re.compile(r'^\[\s+FAILED\s+]\s+(.*)\s+\(.*\)\s*$')
+      run_matched = False
+      run_name = ""
       for l in test_stdout.splitlines():
         match = matchRUN.search(l)
         if match:
           errchunks = []
+          run_matched = False
+          run_name = match.group(1)
           continue
         match = matchOK.search(l)
         if match:
           retval.append( SaruTestResult( self.testname+'::'+match.group(1).strip(), SaruTestResult.PASSED, "", "", "\n".join( errchunks ) ) )
+          run_matched = True
           continue
         match = matchFAILED.search(l)
         if match:
           retval.append( SaruTestResult( self.testname+'::'+match.group(1).strip(), SaruTestResult.FAILED, "", "", "\n".join( errchunks ) ) )
+          run_matched = True
           continue
         else:
           errchunks.append( l.rstrip() )
+
+      if not run_matched:
+        if retcode == -11:  #SEGFAULT!
+          retval.append( SaruTestResult( self.testname+'::'+run_name, SaruTestResult.FAILED, "did not complete - SEGFAULT",  "\n".join( errchunks ) , test_stderr ) )
+        else:
+          retval.append( SaruTestResult( self.testname+'::'+run_name, SaruTestResult.FAILED, "test did not complete - returned %d" % retcode,  "\n".join( errchunks ) , test_stderr ) )
 
       return retval
 
