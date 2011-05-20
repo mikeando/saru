@@ -334,9 +334,14 @@ class SingleTestRunner:
         for lib in newlibs:
           print >> makefile, "CXXLIBS+= "+os.path.expandvars(lib[1])
       print >> makefile, "\n"
+      print >> makefile, ".PHONY : .saru/"+ self.testname +".o"
+      print >> makefile, ""
 
-      print >> makefile, self.testname + ".test : " + self.testname
-      print >> makefile, "\t$(CXX) $(CXXFLAGS) " + self.testname + " -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(EXTRAOBJECTS) $(CXXLIBS)"
+      print >> makefile, self.testname + ".test : .saru/" + self.testname +".o"
+      print >> makefile, "\t$(CXX) $(CXXFLAGS) .saru/" + self.testname + ".o -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(EXTRAOBJECTS) $(CXXLIBS)"
+      print >> makefile, ""
+      print >> makefile, ".saru/"+self.testname + ".o :"
+      print >> makefile, "\t$(CXX) $(CXXFLAGS) -c " + self.testname + " -o .saru/" + self.testname + ".o $(INCLUDES)"
       makefile.close()
       
       # Lets try making it...
