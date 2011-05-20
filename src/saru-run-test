@@ -288,6 +288,10 @@ class SingleTestRunner:
       cxxFlagsRegExp = re.compile(r"\s*CxxFlags\s*:\s*(.*)$")
 
       print >> makefile, "###################"
+      print >> makefile, "# COMPILER"
+      print >> makefile, "###################"
+      print >> makefile, "CXX?=g++\n"
+      print >> makefile, "###################"
       print >> makefile, "# INCLUDES"
       print >> makefile, "###################\n"
       print >> makefile, "INCLUDES="
@@ -332,7 +336,7 @@ class SingleTestRunner:
       print >> makefile, "\n"
 
       print >> makefile, self.testname + ".test : " + self.testname
-      print >> makefile, "\tg++ $(CXXFLAGS) " + self.testname + " -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(EXTRAOBJECTS) $(CXXLIBS)"
+      print >> makefile, "\t$(CXX) $(CXXFLAGS) " + self.testname + " -o .saru/bin/" + self.testname + ".test $(INCLUDES) $(EXTRAOBJECTS) $(CXXLIBS)"
       makefile.close()
       
       # Lets try making it...
