@@ -100,14 +100,14 @@ public:
   TestEqualityFailed( const X & x, const Y & y, int lineNumber, const char * const filename ) : TestFailed(lineNumber, filename)
   {
     std::stringstream ss;
-    ss<<filename<<":"<<lineNumber<<": saru_assert_equal failed. Expected \""<<x<<"\" got \""<<y<<"\"";
+    ss<<filename<<":"<<lineNumber<<": saru_assert_equal failed.\nExpected : \""<<x<<"\"\nGot      : \""<<y<<"\"";
     setMessage(ss.str());
   }
 
   TestEqualityFailed( const X & x, const Y & y, const std::string & mesg, int lineNumber, const char * const filename ) : TestFailed(lineNumber, filename)
   {
     std::stringstream ss;
-    ss<<filename<<":"<<lineNumber<<": saru_assert_equal failed. Expected \""<<x<<"\" got \""<<y<<"\" ["<<mesg<<"]";
+    ss<<filename<<":"<<lineNumber<<": saru_assert_equal failed. ["<<mesg<<"]\nExpected : \""<<x<<"\"\nGot      : \""<<y<<"\"";
     setMessage(ss.str());
   }
 };
