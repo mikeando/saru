@@ -371,7 +371,7 @@ class SingleTestRunner:
     # Lets try running it...
     max_time = 120
     if 'MaxTime' in filesettings :
-      max_time = int( filesettings['MaxTime'] )
+      max_time = int( filesettings['MaxTime'][0] )
 
     (test_stdout, test_stderr, retcode ) = runTimed(max_time, self.testdir, executable, { 'stdout':subprocess.PIPE, 'stderr':subprocess.PIPE, 'close_fds':True } ) 
 
