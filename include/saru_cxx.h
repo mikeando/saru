@@ -244,8 +244,10 @@ void do_test( void(T::*fn)(), const std::string & testname, TestLogger & logger 
   std::cerr<<"<@saru start "+testname+" @>"<<std::endl;
   try
   {
-    T t;
-    (t.*fn)();
+    {
+      T t;
+      (t.*fn)();
+    }
     logger.registerTestPassed( testname );
   }
   catch( TestFailed & err )
