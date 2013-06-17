@@ -34,6 +34,7 @@
 import sys
 import re
 import os
+import imp
 
 # Get a list of  all the SARU tags in a python test file
 def parsePythonFile( infile ):
@@ -205,11 +206,21 @@ def doSaruParseDump():
     saruconfpath = os.path.join( testdir, "saruconf" );
   #Is there a saruconf file at the same location
   saruconfsettings = {}
-  try:
-    saruconffile = open(saruconfpath,"r")
-    saruconfsettings = parseSaruconfFile(saruconffile)
-  except IOError:
-    pass
+
+  # Prefer loading the config as a python module
+  if os.path.isfile( saruconfpath + ".py" ):
+    saruconfpath = saruconfpath+".py"
+  if saruconfpath.endswith(".py"):
+    #TODO: Add some error handling
+    saruconf = imp.load_source("saruconf", saruconfpath)
+    saruconfsettings = saruconf.update_settings( testdir, settings )
+  else:
+
+    try:
+      saruconffile = open(saruconfpath,"r")
+      saruconfsettings = parseSaruconfFile(saruconffile)
+    except IOError:
+      pass
 
   for k,v in saruconfsettings.iteritems():
      for vv in v:
